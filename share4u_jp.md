@@ -18,7 +18,22 @@
   }
   ```
 
-### 2. コマンド実行ツール
+### 2. ファイル編集ツール (v1.1.0 新機能)
+- **ツール名**: `file_edit`
+- **サポート操作**: `delete_lines`（行削除）、`insert_lines`（行挿入）、`replace_lines`（行置換）、`append_lines`（行追加）
+- **パラメータ構造**:
+  ```json
+  {
+    "operation": "delete_lines|insert_lines|replace_lines|append_lines",
+    "path": "ファイルパス",
+    "start_line": "開始行番号（1から開始）",
+    "end_line": "終了行番号（delete_linesとreplace_linesのみ必要）",
+    "content": "挿入または置換する内容",
+    "encoding": "ファイルエンコーディング（オプション、デフォルトutf8）"
+  }
+  ```
+
+### 3. コマンド実行ツール
 - **ツール名**: `execute_command`
 - **パラメータ構造**:
   ```json
@@ -28,7 +43,7 @@
   }
   ```
 
-### 3. セキュリティ制限
+### 4. セキュリティ制限
 - **禁止パス**: `/`, `/Users/<current_user>`, `/etc`, `/bin`
 - **危険コマンドフィルタリング**: `rm -rf`, `sudo`, `chmod 777`, `format`, `del`など
 - **パス検証**: すべての操作はセキュリティチェックを通過する必要があります

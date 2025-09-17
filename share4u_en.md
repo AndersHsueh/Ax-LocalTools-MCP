@@ -18,7 +18,22 @@ Please help me create a complete MCP (Model Context Protocol) server project tha
   }
   ```
 
-### 2. Command Execution Tool
+### 2. File Edit Tool (v1.1.0 New)
+- **Tool Name**: `file_edit`
+- **Supported Operations**: `delete_lines`, `insert_lines`, `replace_lines`, `append_lines`
+- **Parameter Structure**:
+  ```json
+  {
+    "operation": "delete_lines|insert_lines|replace_lines|append_lines",
+    "path": "file path",
+    "start_line": "start line number (1-based)",
+    "end_line": "end line number (only needed for delete_lines and replace_lines)",
+    "content": "content to insert or replace",
+    "encoding": "file encoding (optional, default utf8)"
+  }
+  ```
+
+### 3. Command Execution Tool
 - **Tool Name**: `execute_command`
 - **Parameter Structure**:
   ```json
@@ -28,7 +43,7 @@ Please help me create a complete MCP (Model Context Protocol) server project tha
   }
   ```
 
-### 3. Security Restrictions
+### 4. Security Restrictions
 - **Forbidden Paths**: `/`, `/Users/<current_user>`, `/etc`, `/bin`
 - **Dangerous Command Filtering**: `rm -rf`, `sudo`, `chmod 777`, `format`, `del`, etc.
 - **Path Validation**: All operations must pass security checks

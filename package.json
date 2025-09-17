@@ -1,6 +1,6 @@
 {
   "name": "local-file-operation-mcp",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "本地文件操作MCP服务器，支持文件读写、目录操作和命令执行",
   "main": "index.js",
   "bin": {

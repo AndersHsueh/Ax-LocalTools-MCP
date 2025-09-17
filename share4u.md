@@ -18,7 +18,22 @@
   }
   ```
 
-### 2. 命令执行工具
+### 2. 文件编辑工具 (v1.1.0 新增)
+- **工具名称**：`file_edit`
+- **支持操作**：`delete_lines`（删除行）、`insert_lines`（插入行）、`replace_lines`（替换行）、`append_lines`（追加行）
+- **参数结构**：
+  ```json
+  {
+    "operation": "delete_lines|insert_lines|replace_lines|append_lines",
+    "path": "文件路径",
+    "start_line": "起始行号（从1开始）",
+    "end_line": "结束行号（仅delete_lines和replace_lines需要）",
+    "content": "要插入或替换的内容",
+    "encoding": "文件编码（可选，默认utf8）"
+  }
+  ```
+
+### 3. 命令执行工具
 - **工具名称**：`execute_command`
 - **参数结构**：
   ```json
@@ -28,7 +43,7 @@
   }
   ```
 
-### 3. 安全限制
+### 4. 安全限制
 - **禁止访问的路径**：`/`, `/Users/<current_user>`, `/etc`, `/bin`
 - **危险命令过滤**：`rm -rf`, `sudo`, `chmod 777`, `format`, `del` 等
 - **路径验证**：所有操作前必须进行安全检查

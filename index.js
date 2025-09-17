@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * 安全MCP服务器 - Node.js版本
- * 支持文件读写和本地命令执行
+ * 安全MCP服务器 - Node.js版本 v1.2.0
+ * 支持文件操作、文件编辑、文件搜索、文件比较、文件哈希、文件权限、文件压缩、文件监控和命令执行
  * 包含安全限制，禁止操作敏感目录
  */
 
@@ -12,34 +12,25 @@ const {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } = require('@modelcontextprotocol/sdk/types.js');
-const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
 
-const execAsync = promisify(exec);
-
-// 禁止操作的目录列表
-const FORBIDDEN_PATHS = [
-  '/',
-  `/Users/${process.env.USER || 'unknown'}`,
-  '/etc',
-  '/bin',
-  '/usr/bin',
-  '/sbin',
-  '/usr/sbin',
-  '/System',
-  '/Applications',
-  '/Library',
-  '/private',
-];
+// 导入工具模块
+const SecurityValidator = require('./tools/securityValidator.js');
+const FileOperationTool = require('./tools/fileOperation.js');
+const FileEditTool = require('./tools/fileEdit.js');
+const FileSearchTool = require('./tools/fileSearch.js');
+const FileCompareTool = require('./tools/fileCompare.js');
+const FileHashTool = require('./tools/fileHash.js');
+const FilePermissionsTool = require('./tools/filePermissions.js');
+const FileArchiveTool = require('./tools/fileArchive.js');
+const FileWatchTool = require('./tools/fileWatch.js');
+const CommandExecutionTool = require('./tools/commandExecution.js');
 
 class SecureMCPServer {
   constructor() {
     this.server = new Server(
       {
         name: 'secure-mcp-server',
-        version: '1.0.0',
+        version: '1.2.0',
       },
       {
         capabilities: {
@@ -47,6 +38,20 @@ class SecureMCPServer {
         },
       }
     );
+
+    // 初始化安全验证器和工具
+    this.securityValidator = new SecurityValidator();
+    this.tools = {
+      file_operation: new FileOperationTool(this.securityValidator),
+      file_edit: new FileEditTool(this.securityValidator),
+      file_search: new FileSearchTool(this.securityValidator),
+      file_compare: new FileCompareTool(this.securityValidator),
+      file_hash: new FileHashTool(this.securityValidator),
+      file_permissions: new FilePermissionsTool(this.securityValidator),
+      file_archive: new FileArchiveTool(this.securityValidator),
+      file_watch: new FileWatchTool(this.securityValidator),
+      execute_command: new CommandExecutionTool(this.securityValidator)
+    };
 
     this.setupHandlers();
   }
@@ -80,6 +85,201 @@ class SecureMCPServer {
             }
           },
           {
+            name: 'file_edit',
+            description: '文件行级编辑工具，支持删除行、插入行、替换行等操作',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                operation: {
+                  type: 'string',
+                  enum: ['delete_lines', 'insert_lines', 'replace_lines', 'append_lines'],
+                  description: '操作类型：delete_lines(删除行), insert_lines(插入行), replace_lines(替换行), append_lines(追加行)'
+                },
+                path: {
+                  type: 'string',
+                  description: '文件路径'
+                },
+                start_line: {
+                  type: 'integer',
+                  description: '起始行号（从1开始）'
+                },
+                end_line: {
+                  type: 'integer',
+                  description: '结束行号（仅delete_lines和replace_lines需要）'
+                },
+                content: {
+                  type: 'string',
+                  description: '要插入或替换的内容'
+                },
+                encoding: {
+                  type: 'string',
+                  default: 'utf8',
+                  description: '文件编码（可选，默认utf8）'
+                }
+              },
+              required: ['operation', 'path']
+            }
+          },
+          {
+            name: 'file_search',
+            description: '文件搜索工具，支持在文件中搜索内容，支持正则表达式',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                search_path: {
+                  type: 'string',
+                  description: '搜索路径'
+                },
+                pattern: {
+                  type: 'string',
+                  description: '搜索模式（支持正则表达式）'
+                },
+                file_types: {
+                  type: 'string',
+                  default: '*',
+                  description: '文件类型过滤（如：txt,js,py 或 * 表示所有类型）'
+                },
+                case_sensitive: {
+                  type: 'boolean',
+                  default: false,
+                  description: '是否区分大小写'
+                },
+                max_results: {
+                  type: 'integer',
+                  default: 100,
+                  description: '最大搜索结果数量'
+                }
+              },
+              required: ['search_path', 'pattern']
+            }
+          },
+          {
+            name: 'file_compare',
+            description: '文件比较工具，比较两个文件的差异',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                file1: {
+                  type: 'string',
+                  description: '第一个文件路径'
+                },
+                file2: {
+                  type: 'string',
+                  description: '第二个文件路径'
+                },
+                output_format: {
+                  type: 'string',
+                  enum: ['text', 'json'],
+                  default: 'text',
+                  description: '输出格式'
+                }
+              },
+              required: ['file1', 'file2']
+            }
+          },
+          {
+            name: 'file_hash',
+            description: '文件哈希工具，计算文件的MD5、SHA1、SHA256哈希值',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                path: {
+                  type: 'string',
+                  description: '文件路径'
+                },
+                algorithm: {
+                  type: 'string',
+                  enum: ['md5', 'sha1', 'sha256', 'sha512'],
+                  default: 'md5',
+                  description: '哈希算法'
+                }
+              },
+              required: ['path']
+            }
+          },
+          {
+            name: 'file_permissions',
+            description: '文件权限工具，修改文件权限',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                path: {
+                  type: 'string',
+                  description: '文件路径'
+                },
+                mode: {
+                  type: 'string',
+                  description: '权限模式（如：755, 644）'
+                },
+                recursive: {
+                  type: 'boolean',
+                  default: false,
+                  description: '是否递归应用权限'
+                }
+              },
+              required: ['path', 'mode']
+            }
+          },
+          {
+            name: 'file_archive',
+            description: '文件压缩/解压工具，支持ZIP、TAR、GZ格式',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                operation: {
+                  type: 'string',
+                  enum: ['compress', 'extract'],
+                  description: '操作类型：compress(压缩), extract(解压)'
+                },
+                source: {
+                  type: 'string',
+                  description: '源文件或目录'
+                },
+                destination: {
+                  type: 'string',
+                  description: '目标文件或目录（可选）'
+                },
+                format: {
+                  type: 'string',
+                  enum: ['zip', 'tar', 'gz', 'tar.gz'],
+                  default: 'zip',
+                  description: '压缩格式'
+                }
+              },
+              required: ['operation', 'source']
+            }
+          },
+          {
+            name: 'file_watch',
+            description: '文件监控工具，监控文件变化',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                path: {
+                  type: 'string',
+                  description: '监控路径'
+                },
+                events: {
+                  type: 'string',
+                  default: 'create,delete,modify',
+                  description: '监控事件（create,delete,modify）'
+                },
+                duration: {
+                  type: 'integer',
+                  default: 30,
+                  description: '监控时长（秒）'
+                },
+                output_format: {
+                  type: 'string',
+                  enum: ['text', 'json'],
+                  default: 'text',
+                  description: '输出格式'
+                }
+              },
+              required: ['path']
+            }
+          },
+          {
             name: 'execute_command',
             description: '执行本地命令',
             inputSchema: {
@@ -106,10 +306,8 @@ class SecureMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
-        if (name === 'file_operation') {
-          return await this.handleFileOperation(args);
-        } else if (name === 'execute_command') {
-          return await this.handleExecuteCommand(args);
+        if (this.tools[name]) {
+          return await this.tools[name].handle(args);
         } else {
           throw new Error(`未知工具: ${name}`);
         }
@@ -126,295 +324,7 @@ class SecureMCPServer {
     });
   }
 
-  isPathAllowed(filePath) {
-    try {
-      // 转换为绝对路径
-      const absPath = path.resolve(filePath);
-      
-      // 允许临时目录和当前项目目录
-      if (absPath.startsWith('/tmp') || absPath.startsWith('/var/folders')) {
-        return true;
-      }
-      
-      // 允许当前项目目录
-      const currentDir = path.resolve(__dirname);
-      if (absPath.startsWith(currentDir)) {
-        return true;
-      }
-      
-      // 检查是否在禁止的路径中
-      for (const forbidden of FORBIDDEN_PATHS) {
-        if (absPath.startsWith(forbidden)) {
-          return false;
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  async handleFileOperation(args) {
-    const { operation, path: filePath, content = '' } = args;
-
-    if (!this.isPathAllowed(filePath)) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `错误: 不允许访问路径 ${filePath}`
-          }
-        ]
-      };
-    }
-
-    try {
-      switch (operation) {
-        case 'read':
-          return await this.readFile(filePath);
-        case 'write':
-          return await this.writeFile(filePath, content);
-        case 'list':
-          return await this.listDirectory(filePath);
-        case 'create_dir':
-          return await this.createDirectory(filePath);
-        case 'delete':
-          return await this.deleteFileOrDirectory(filePath);
-        default:
-          throw new Error(`不支持的操作类型: ${operation}`);
-      }
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `错误: ${error.message}`
-          }
-        ]
-      };
-    }
-  }
-
-  async readFile(filePath) {
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `文件内容:\n${content}`
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`文件不存在: ${filePath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限读取文件: ${filePath}`);
-      } else {
-        throw new Error(`读取文件失败: ${error.message}`);
-      }
-    }
-  }
-
-  async writeFile(filePath, content) {
-    try {
-      // 确保目录存在
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      
-      await fs.writeFile(filePath, content, 'utf-8');
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `成功写入文件: ${filePath}`
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'EACCES') {
-        throw new Error(`没有权限写入文件: ${filePath}`);
-      } else {
-        throw new Error(`写入文件失败: ${error.message}`);
-      }
-    }
-  }
-
-  async listDirectory(dirPath) {
-    try {
-      const items = await fs.readdir(dirPath);
-      let result = `目录 ${dirPath} 的内容:\n`;
-      
-      for (const item of items.sort()) {
-        const itemPath = path.join(dirPath, item);
-        try {
-          const stats = await fs.stat(itemPath);
-          if (stats.isDirectory()) {
-            result += `[目录] ${item}/\n`;
-          } else {
-            result += `[文件] ${item}\n`;
-          }
-        } catch (error) {
-          result += `[未知] ${item}\n`;
-        }
-      }
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: result
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`目录不存在: ${dirPath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限访问目录: ${dirPath}`);
-      } else {
-        throw new Error(`列出目录失败: ${error.message}`);
-      }
-    }
-  }
-
-  async createDirectory(dirPath) {
-    try {
-      await fs.mkdir(dirPath, { recursive: true });
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `成功创建目录: ${dirPath}`
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'EACCES') {
-        throw new Error(`没有权限创建目录: ${dirPath}`);
-      } else {
-        throw new Error(`创建目录失败: ${error.message}`);
-      }
-    }
-  }
-
-  async deleteFileOrDirectory(filePath) {
-    try {
-      const stats = await fs.stat(filePath);
-      if (stats.isDirectory()) {
-        await fs.rmdir(filePath); // 只删除空目录
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `成功删除目录: ${filePath}`
-            }
-          ]
-        };
-      } else {
-        await fs.unlink(filePath);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `成功删除文件: ${filePath}`
-            }
-          ]
-        };
-      }
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`路径不存在: ${filePath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限删除: ${filePath}`);
-      } else {
-        throw new Error(`删除失败: ${error.message}`);
-      }
-    }
-  }
-
-  async handleExecuteCommand(args) {
-    const { command, working_directory } = args;
-
-    // 检查工作目录是否被允许
-    if (working_directory && !this.isPathAllowed(working_directory)) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `错误: 不允许在工作目录 ${working_directory} 中执行命令`
-          }
-        ]
-      };
-    }
-
-    // 检查命令是否包含危险操作
-    const dangerousCommands = ['rm -rf', 'sudo', 'su', 'chmod 777', 'chown', 'passwd'];
-    if (dangerousCommands.some(dangerous => command.includes(dangerous))) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `错误: 不允许执行危险命令: ${command}`
-          }
-        ]
-      };
-    }
-
-    try {
-      const cwd = working_directory || process.cwd();
-      
-      // 执行命令，设置30秒超时
-      const { stdout, stderr } = await execAsync(command, {
-        cwd,
-        timeout: 30000
-      });
-
-      let output = `命令: ${command}\n`;
-      output += `工作目录: ${cwd}\n`;
-      output += `返回码: 0\n`;
-
-      if (stdout) {
-        output += `标准输出:\n${stdout}\n`;
-      }
-
-      if (stderr) {
-        output += `标准错误:\n${stderr}\n`;
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: output
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'TIMEOUT') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `错误: 命令执行超时: ${command}`
-            }
-          ]
-        };
-      } else {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `错误: 执行命令失败 ${error.message}`
-            }
-          ]
-        };
-      }
-    }
-  }
-
-  async run() {
+  async start() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error('MCP服务器已启动');
@@ -422,16 +332,5 @@ class SecureMCPServer {
 }
 
 // 启动服务器
-async function main() {
-  const server = new SecureMCPServer();
-  await server.run();
-}
-
-if (require.main === module) {
-  main().catch((error) => {
-    console.error('服务器启动失败:', error);
-    process.exit(1);
-  });
-}
-
-module.exports = SecureMCPServer;
+const server = new SecureMCPServer();
+server.start().catch(console.error);
