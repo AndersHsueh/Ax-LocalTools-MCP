@@ -23,10 +23,17 @@ class SecurityValidator {
     ];
   }
 
-  isPathAllowed(filePath) {
+  isPathAllowed(filePath, workingDirectory = null) {
     try {
-      // 转换为绝对路径
-      const absPath = path.resolve(filePath);
+      // 如果有工作目录，先解析相对于工作目录的路径
+      let absPath;
+      if (workingDirectory && !path.isAbsolute(filePath)) {
+        // 相对路径 + 工作目录 = 绝对路径
+        absPath = path.resolve(workingDirectory, filePath);
+      } else {
+        // 直接解析为绝对路径
+        absPath = path.resolve(filePath);
+      }
       
       // 允许临时目录和当前项目目录
       if (absPath.startsWith('/tmp') || absPath.startsWith('/var/folders')) {
@@ -37,6 +44,14 @@ class SecurityValidator {
       const currentDir = path.resolve(__dirname, '..');
       if (absPath.startsWith(currentDir)) {
         return true;
+      }
+      
+      // 如果指定了工作目录，检查是否在工作目录范围内
+      if (workingDirectory) {
+        const absWorkingDir = path.resolve(workingDirectory);
+        if (absPath.startsWith(absWorkingDir)) {
+          return true;
+        }
       }
       
       // 检查是否在禁止的路径中

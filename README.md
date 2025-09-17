@@ -114,6 +114,13 @@ npm install
 
 ### 文件操作工具
 
+#### 工作目录概念
+为了安全性和灵活性，MCP服务器支持工作目录概念：
+- **工作目录**：通过 `working_directory` 参数指定一个安全的基础目录
+- **相对路径**：在 `path` 参数中使用相对路径，会自动基于工作目录解析
+- **安全限制**：只有在工作目录及其子目录下的操作才被允许
+- **跨平台兼容**：不硬编码特定路径，适用于不同用户和系统
+
 #### 读取文件
 ```json
 {
@@ -155,6 +162,18 @@ npm install
   "arguments": {
     "operation": "create_dir",
     "path": "/path/to/new/directory"
+  }
+}
+```
+
+#### 使用工作目录（推荐）
+```json
+{
+  "name": "file_operation",
+  "arguments": {
+    "operation": "create_dir",
+    "path": "售前类业务/自动驾驶HMI",
+    "working_directory": "/Users/xueyuheng/isoftstone"
   }
 }
 ```

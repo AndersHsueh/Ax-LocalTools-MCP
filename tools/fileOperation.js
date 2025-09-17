@@ -11,38 +11,47 @@ class FileOperationTool {
     this.securityValidator = securityValidator;
   }
 
-  async handle(args) {
-    const { operation, path: filePath, content } = args;
+  // 解析路径，支持工作目录
+  resolvePath(filePath, workingDirectory = null) {
+    if (workingDirectory && !path.isAbsolute(filePath)) {
+      return path.resolve(workingDirectory, filePath);
+    }
+    return path.resolve(filePath);
+  }
 
-    // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(filePath)) {
+  async handle(args) {
+    const { operation, path: filePath, content, working_directory } = args;
+
+    // 检查路径是否被允许（支持工作目录）
+    if (!this.securityValidator.isPathAllowed(filePath, working_directory)) {
       throw new Error(`不允许操作路径: ${filePath}`);
     }
 
     switch (operation) {
       case 'read':
-        return await this.readFile(filePath);
+        return await this.readFile(filePath, working_directory);
       case 'write':
-        return await this.writeFile(filePath, content);
+        return await this.writeFile(filePath, content, working_directory);
       case 'list':
-        return await this.listDirectory(filePath);
+        return await this.listDirectory(filePath, working_directory);
       case 'create_dir':
-        return await this.createDirectory(filePath);
+        return await this.createDirectory(filePath, working_directory);
       case 'delete':
-        return await this.deleteFileOrDirectory(filePath);
+        return await this.deleteFileOrDirectory(filePath, working_directory);
       default:
         throw new Error(`不支持的操作类型: ${operation}`);
     }
   }
 
-  async readFile(filePath) {
+  async readFile(filePath, workingDirectory = null) {
     try {
-      const content = await fs.readFile(filePath, 'utf8');
+      const fullPath = this.resolvePath(filePath, workingDirectory);
+      const content = await fs.readFile(fullPath, 'utf8');
       return {
         content: [
           {
             type: 'text',
-            text: `文件内容 (${filePath}):\n${content}`
+            text: `文件内容 (${fullPath}):\n${content}`
           }
         ]
       };
@@ -57,14 +66,15 @@ class FileOperationTool {
     }
   }
 
-  async writeFile(filePath, content) {
+  async writeFile(filePath, content, workingDirectory = null) {
     try {
-      await fs.writeFile(filePath, content, 'utf8');
+      const fullPath = this.resolvePath(filePath, workingDirectory);
+      await fs.writeFile(fullPath, content, 'utf8');
       return {
         content: [
           {
             type: 'text',
-            text: `成功写入文件: ${filePath}`
+            text: `成功写入文件: ${fullPath}`
           }
         ]
       };
@@ -77,9 +87,10 @@ class FileOperationTool {
     }
   }
 
-  async listDirectory(dirPath) {
+  async listDirectory(dirPath, workingDirectory = null) {
     try {
-      const items = await fs.readdir(dirPath, { withFileTypes: true });
+      const fullPath = this.resolvePath(dirPath, workingDirectory);
+      const items = await fs.readdir(fullPath, { withFileTypes: true });
       const result = items.map(item => {
         const type = item.isDirectory() ? '[目录]' : '[文件]';
         return `${type} ${item.name}`;
@@ -89,7 +100,7 @@ class FileOperationTool {
         content: [
           {
             type: 'text',
-            text: `目录内容 (${dirPath}):\n${result}`
+            text: `目录内容 (${fullPath}):\n${result}`
           }
         ]
       };
@@ -104,14 +115,15 @@ class FileOperationTool {
     }
   }
 
-  async createDirectory(dirPath) {
+  async createDirectory(dirPath, workingDirectory = null) {
     try {
-      await fs.mkdir(dirPath, { recursive: true });
+      const fullPath = this.resolvePath(dirPath, workingDirectory);
+      await fs.mkdir(fullPath, { recursive: true });
       return {
         content: [
           {
             type: 'text',
-            text: `成功创建目录: ${dirPath}`
+            text: `成功创建目录: ${fullPath}`
           }
         ]
       };
@@ -124,26 +136,27 @@ class FileOperationTool {
     }
   }
 
-  async deleteFileOrDirectory(filePath) {
+  async deleteFileOrDirectory(filePath, workingDirectory = null) {
     try {
-      const stats = await fs.stat(filePath);
+      const fullPath = this.resolvePath(filePath, workingDirectory);
+      const stats = await fs.stat(fullPath);
       if (stats.isDirectory()) {
-        await fs.rmdir(filePath, { recursive: true });
+        await fs.rmdir(fullPath, { recursive: true });
         return {
           content: [
             {
               type: 'text',
-              text: `成功删除目录: ${filePath}`
+              text: `成功删除目录: ${fullPath}`
             }
           ]
         };
       } else {
-        await fs.unlink(filePath);
+        await fs.unlink(fullPath);
         return {
           content: [
             {
               type: 'text',
-              text: `成功删除文件: ${filePath}`
+              text: `成功删除文件: ${fullPath}`
             }
           ]
         };

@@ -65,7 +65,7 @@ class SecureMCPServer {
         tools: [
           {
             name: 'file_operation',
-            description: '统一的文件操作工具，支持读取、写入、列表目录、创建目录、删除文件等操作',
+            description: '统一的文件操作工具，支持读取、写入、列表目录、创建目录、删除文件等操作。支持工作目录概念，可在指定目录下进行相对路径操作',
             inputSchema: {
               type: 'object',
               properties: {
@@ -76,11 +76,15 @@ class SecureMCPServer {
                 },
                 path: {
                   type: 'string',
-                  description: '文件或目录路径'
+                  description: '文件或目录路径（可以是相对路径或绝对路径）'
                 },
                 content: {
                   type: 'string',
                   description: '写入文件时的内容（仅在operation为write时需要）'
+                },
+                working_directory: {
+                  type: 'string',
+                  description: '工作目录（可选），当path为相对路径时，会基于此目录解析。如果未指定，则基于当前工作目录'
                 }
               },
               required: ['operation', 'path']
