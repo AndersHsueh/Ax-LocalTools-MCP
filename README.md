@@ -427,8 +427,8 @@ mcp/
 │   ├── commandExecution.js  # 命令执行工具
 │   ├── taskManager.js       # 任务管理工具
 │   └── securityValidator.js # 安全验证模块
-├── temps/                # 临时文件目录
-│   └── todo_<model_name>.json # 任务数据存储
+├── temps/                # 临时文件目录（自动创建）
+│   └── todo_<model_name>.json # 任务数据存储（运行时生成）
 ├── share4u.md            # 中文分享文档
 ├── share4u_en.md         # 英文分享文档
 ├── share4u_jp.md         # 日文分享文档
