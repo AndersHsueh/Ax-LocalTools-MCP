@@ -24,13 +24,14 @@ const FilePermissionsTool = require('./tools/filePermissions.js');
 const FileArchiveTool = require('./tools/fileArchive.js');
 const FileWatchTool = require('./tools/fileWatch.js');
 const CommandExecutionTool = require('./tools/commandExecution.js');
+const TaskManagerTool = require('./tools/taskManager.js');
 
 class SecureMCPServer {
   constructor() {
     this.server = new Server(
       {
         name: 'secure-mcp-server',
-        version: '1.2.0',
+        version: '2.0.1',
       },
       {
         capabilities: {
@@ -50,7 +51,8 @@ class SecureMCPServer {
       file_permissions: new FilePermissionsTool(this.securityValidator),
       file_archive: new FileArchiveTool(this.securityValidator),
       file_watch: new FileWatchTool(this.securityValidator),
-      execute_command: new CommandExecutionTool(this.securityValidator)
+      execute_command: new CommandExecutionTool(this.securityValidator),
+      task_manager: new TaskManagerTool(this.securityValidator)
     };
 
     this.setupHandlers();
@@ -295,6 +297,65 @@ class SecureMCPServer {
                 }
               },
               required: ['command']
+            }
+          },
+          {
+            name: 'task_manager',
+            description: '任务管理工具，支持任务分解、排期、进度跟踪',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                operation: {
+                  type: 'string',
+                  enum: ['create', 'update', 'delete', 'list', 'complete', 'get', 'clear'],
+                  description: '操作类型：create(创建), update(更新), delete(删除), list(列表), complete(完成), get(获取), clear(清空)'
+                },
+                model_name: {
+                  type: 'string',
+                  default: 'default',
+                  description: '模型名称，用于区分不同模型的任务列表'
+                },
+                task_id: {
+                  type: 'string',
+                  description: '任务ID（更新、删除、完成、获取时需要）'
+                },
+                title: {
+                  type: 'string',
+                  description: '任务标题'
+                },
+                description: {
+                  type: 'string',
+                  description: '任务描述'
+                },
+                priority: {
+                  type: 'string',
+                  enum: ['low', 'medium', 'high', 'urgent'],
+                  default: 'medium',
+                  description: '优先级'
+                },
+                due_date: {
+                  type: 'string',
+                  description: '截止日期（ISO格式，如：2024-01-15T10:00:00Z）'
+                },
+                subtasks: {
+                  type: 'array',
+                  description: '子任务列表'
+                },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'in_progress', 'completed', 'cancelled'],
+                  default: 'pending',
+                  description: '任务状态'
+                },
+                progress: {
+                  type: 'integer',
+                  minimum: 0,
+                  maximum: 100,
+                  default: 0,
+                  description: '任务进度（0-100）'
+                }
+              },
+              required: ['operation']
             }
           }
         ]
