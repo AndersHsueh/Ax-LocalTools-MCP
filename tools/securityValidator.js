@@ -10,7 +10,6 @@ class SecurityValidator {
     // 禁止操作的目录列表
     this.FORBIDDEN_PATHS = [
       '/',
-      `/Users/${process.env.USER || 'unknown'}`,
       '/etc',
       '/bin',
       '/usr/bin',
@@ -20,6 +19,21 @@ class SecurityValidator {
       '/Applications',
       '/Library',
       '/private',
+    ];
+    
+    // 允许的项目目录模式
+    this.ALLOWED_PROJECT_PATTERNS = [
+      '/isoftstone/',
+      '/Desktop/',
+      '/Documents/',
+      '/Downloads/',
+      '/Projects/',
+      '/Workspace/',
+      '/Code/',
+      '/Development/',
+      '/Work/',
+      '/Study/',
+      '/Research/'
     ];
   }
 
@@ -50,6 +64,14 @@ class SecurityValidator {
       if (workingDirectory) {
         const absWorkingDir = path.resolve(workingDirectory);
         if (absPath.startsWith(absWorkingDir)) {
+          return true;
+        }
+      }
+      
+      // 智能检测：如果路径包含允许的项目目录结构，允许访问
+      // 这样可以处理大模型直接使用绝对路径的情况
+      for (const pattern of this.ALLOWED_PROJECT_PATTERNS) {
+        if (absPath.includes(pattern)) {
           return true;
         }
       }
