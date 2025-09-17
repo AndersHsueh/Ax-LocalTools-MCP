@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "file_operation": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "local-file-operation-mcp@file:/Users/xueyuheng/research/mcp"
+      ]
+    }
+  }
+}

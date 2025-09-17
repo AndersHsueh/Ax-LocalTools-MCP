@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "file_operation": {
+      "command": "/Users/xueyuheng/.nvm/versions/node/v22.16.0/bin/node",
+      "args": ["/Users/xueyuheng/research/mcp/index.js"],
+      "env": {
+        "PATH": "/Users/xueyuheng/.nvm/versions/node/v22.16.0/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_PATH": "/Users/xueyuheng/research/mcp"
+      }
+    }
+  }
+}
