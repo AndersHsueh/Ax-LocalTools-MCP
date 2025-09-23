@@ -6,12 +6,8 @@
  * 包含安全限制，禁止操作敏感目录
  */
 
-const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
-const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
-const {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} = require('@modelcontextprotocol/sdk/types.js');
+// 注意：@modelcontextprotocol/sdk 是 ESM-only，需使用动态 import 以兼容 CommonJS
+// 我们在启动阶段动态加载并注入依赖，避免 ERR_REQUIRE_ESM
 
 // 导入工具模块
 const SecurityValidator = require('./tools/securityValidator.js');
@@ -27,7 +23,12 @@ const CommandExecutionTool = require('./tools/commandExecution.js');
 const TaskManagerTool = require('./tools/taskManager.js');
 
 class SecureMCPServer {
-  constructor() {
+  constructor({ Server, StdioServerTransport, CallToolRequestSchema, ListToolsRequestSchema }) {
+    this.Server = Server;
+    this.StdioServerTransport = StdioServerTransport;
+    this.CallToolRequestSchema = CallToolRequestSchema;
+    this.ListToolsRequestSchema = ListToolsRequestSchema;
+
     this.server = new Server(
       {
         name: 'secure-mcp-server',
@@ -60,7 +61,7 @@ class SecureMCPServer {
 
   setupHandlers() {
     // 列出可用工具
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler(this.ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -367,7 +368,7 @@ class SecureMCPServer {
     });
 
     // 处理工具调用
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  this.server.setRequestHandler(this.CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       try {
@@ -390,12 +391,30 @@ class SecureMCPServer {
   }
 
   async start() {
-    const transport = new StdioServerTransport();
+    const transport = new this.StdioServerTransport();
     await this.server.connect(transport);
     console.error('MCP服务器已启动');
   }
 }
 
-// 启动服务器
-const server = new SecureMCPServer();
-server.start().catch(console.error);
+// 启动服务器（动态加载 ESM 依赖）
+(async () => {
+  try {
+    const [{ Server }, { StdioServerTransport }, { CallToolRequestSchema, ListToolsRequestSchema }] = await Promise.all([
+      import('@modelcontextprotocol/sdk/server/index.js'),
+      import('@modelcontextprotocol/sdk/server/stdio.js'),
+      import('@modelcontextprotocol/sdk/types.js'),
+    ]);
+
+    const server = new SecureMCPServer({
+      Server,
+      StdioServerTransport,
+      CallToolRequestSchema,
+      ListToolsRequestSchema,
+    });
+    await server.start();
+  } catch (err) {
+    console.error('启动失败: ', err);
+    process.exitCode = 1;
+  }
+})();

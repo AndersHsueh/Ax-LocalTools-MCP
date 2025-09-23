@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "file_operation": {
+      "command": "node",
+      "args": ["D:\\projects\\ax-mcp-server\\index.js"]
+    }
+  }
+}
