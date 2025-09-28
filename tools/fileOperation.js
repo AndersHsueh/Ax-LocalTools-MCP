@@ -28,22 +28,44 @@ class FileOperationTool {
     }
 
     switch (operation) {
-      case 'read':
-        return await this.readFile(filePath, working_directory);
-      case 'write':
-        return await this.writeFile(filePath, content, working_directory);
-      case 'list':
-        return await this.listDirectory(filePath, working_directory);
-      case 'create_dir':
-        return await this.createDirectory(filePath, working_directory);
-      case 'delete':
-        return await this.deleteFileOrDirectory(filePath, working_directory);
-      default:
-        throw new Error(`不支持的操作类型: ${operation}`);
+  async readFile(filePath, workingDirectory = null) {
+    try {
+      const fullPath = this.resolvePath(filePath, workingDirectory);
+      
+      // 读取文件的一部分来检测是否为二进制文件
+      const fd = await fs.open(fullPath, 'r');
+      const buffer = Buffer.alloc(512); // 读取前512字节作为样本
+      const { bytesRead } = await fd.read(buffer, 0, 512, 0);
+      await fd.close();
+
+      // 检查缓冲区是否包含null字节，这通常是二进制文件的标志
+      if (buffer.indexOf(0) !== -1) {
+        throw new Error(`不支持读取二进制文件: ${filePath}`);
+      }
+
+      // 如果不是二进制文件，则正常读取全部内容
+      const content = await fs.readFile(fullPath, 'utf8');
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `文件内容 (${fullPath}):\n${content}`
+          }
+        ]
+      };
+    } catch (error) {
+      if (error.message.includes('不支持读取二进制文件')) {
+        // 重新抛出我们自己定义的二进制文件错误
+        throw error;
+      } else if (error.code === 'ENOENT') {
+        throw new Error(`文件不存在: ${filePath}`);
+      } else if (error.code === 'EACCES') {
+        throw new Error(`没有权限读取文件: ${filePath}`);
+      } else {
+        throw new Error(`读取文件失败: ${error.message}`);
+      }
     }
   }
-
-  async readFile(filePath, workingDirectory = null) {
     try {
       const fullPath = this.resolvePath(filePath, workingDirectory);
       const content = await fs.readFile(fullPath, 'utf8');
