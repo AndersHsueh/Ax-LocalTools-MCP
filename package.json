@@ -1,14 +1,15 @@
 {
   "name": "local-file-operation-mcp",
-  "version": "2.0.1",
-  "description": "本地文件操作MCP服务器，支持文件读写、目录操作和命令执行",
+  "version": "2.1.0",
+  "description": "本地文件操作 MCP 服务器：安全的读写、编辑、搜索、比较、哈希、权限、压缩、监控、命令与任务管理工具集。",
   "main": "index.js",
   "bin": {
-    "local-file-operation-mcp": "index.js"
+    "local-file-operation-mcp": "bin/cli.js"
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js"
+    "dev": "node index.js",
+    "release": "semantic-release"
   },
   "keywords": [
     "mcp",
@@ -21,6 +22,7 @@
   "author": "MCP Server",
   "license": "MIT",
   "dependencies": {
+    "@mastergo/magic-mcp": "^0.1.2",
     "@modelcontextprotocol/sdk": "^0.5.0"
   },
   "engines": {
@@ -32,7 +34,22 @@
   },
   "files": [
     "index.js",
+    "tools/",
+    "README.md",
     "package.json",
-    "README.md"
-  ]
+    "mcp_config*.json",
+    "share4u*.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^11.0.3",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "semantic-release": "^23.1.1"
+  }
 }

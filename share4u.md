@@ -1,8 +1,8 @@
-# 🚀 MCP 服务器开发引导 Prompt
+# 🚀 AX MCP 服务器开发引导 Prompt
 
 ## 📋 任务描述
 
-请帮我创建一个完整的 MCP (Model Context Protocol) 服务器项目，实现本地文件操作和命令执行功能。
+请帮我创建一个完整的 MCP (Model Context Protocol) 服务器项目，名为 `ax_local_operations`，实现本地文件操作和命令执行功能。
 
 ## 🎯 核心功能要求
 
@@ -92,7 +92,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "/path/to/node",
       "args": ["/path/to/index.js"],
       "env": {
@@ -108,7 +108,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "npx",
       "args": [
         "-y",

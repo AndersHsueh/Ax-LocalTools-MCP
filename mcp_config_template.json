@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "npx",
       "args": ["-y", "localFile-operation-server"]
     }

@@ -113,6 +113,9 @@ build/Release
 # Users Environment Variables
 .lock-wscript
 
+# Local file operations environment files
+.local_file_operations/
+
 # IDEs and editors
 .vscode/
 .idea/
@@ -134,6 +137,7 @@ test/
 tests/
 *.test.js
 *.spec.js
+test_env_memory.js
 
 # Build outputs
 build/
@@ -148,3 +152,67 @@ config.local.json
 *.bak
 *.backup
 *.old
+
+# Debugging and development
+debug.log
+*.debug
+
+# Environment variables
+.env*
+!.env.example
+
+# Local secrets and API keys
+secrets/
+keys/
+*.pem
+*.key
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Dependency lock files (keep package-lock.json for consistency)
+yarn.lock
+pnpm-lock.yaml
+
+# Runtime and cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Testing artifacts
+jest-results/
+test-results/
+coverage-reports/
+
+# Temporary working directories
+tmp/
+temp/
+workspace/
+
+# Git hooks (if any)
+.git/hooks/
+
+# Local MCP server data
+.mcp_data/
+mcp_data/
+temps/
+.temps/
+
+# Platform-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor backups
+*~
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Output and generated files
+output/
+generated/
+public/

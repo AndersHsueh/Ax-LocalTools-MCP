@@ -1,8 +1,8 @@
-# 🚀 MCP サーバー開発ガイド プロンプト
+# 🚀 AX MCP サーバー開発ガイド プロンプト
 
 ## 📋 タスク説明
 
-ローカルファイル操作とコマンド実行機能を実装する完全なMCP（Model Context Protocol）サーバープロジェクトを作成してください。
+ローカルファイル操作とコマンド実行機能を実装する `ax_local_operations` と名付けられた完全なMCP（Model Context Protocol）サーバープロジェクトを作成してください。
 
 ## 🎯 コア機能要件
 
@@ -92,7 +92,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "/path/to/node",
       "args": ["/path/to/index.js"],
       "env": {
@@ -108,7 +108,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "npx",
       "args": [
         "-y",
