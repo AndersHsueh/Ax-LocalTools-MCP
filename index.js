@@ -12,6 +12,23 @@
 // 重构：集中注册
 const { instances, getToolInstance } = require('./tools/registry.js');
 
+// 处理命令行参数
+if (process.argv.includes('--help')) {
+  console.log(`AX Local Operations MCP Server v2.1.0\n`);
+  console.log(`Usage: ax-local-operations-mcp [options]\n`);
+  console.log(`Options:`);
+  console.log(`  --help        显示本帮助信息`);
+  console.log(`  --version     显示版本号\n`);
+  console.log(`示例 (作为 MCP Server 被客户端通过 stdio 连接):`);
+  console.log(`  npx -y ax-local-operations-mcp@file:/path/to/project`);
+  process.exit(0);
+}
+
+if (process.argv.includes('--version')) {
+  console.log('2.1.0');
+  process.exit(0);
+}
+
 class SecureMCPServer {
   constructor({ Server, StdioServerTransport, CallToolRequestSchema, ListToolsRequestSchema }) {
     this.Server = Server;

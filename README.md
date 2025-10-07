@@ -186,7 +186,11 @@ npm install
       "args": [
         "-y",
         "ax-local-operations-mcp@file:/Users/abc/research/mcp"
-      ]
+      ],
+      "env": {
+        "NODE_PATH": "/Users/abc/research/mcp",
+        "PATH": "/Users/abc/.nvm/versions/node/v22.16.0/bin:/usr/local/bin:/usr/bin:/bin"
+      }
     }
   }
 }

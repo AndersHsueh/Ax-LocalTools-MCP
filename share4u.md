@@ -112,8 +112,12 @@ mcp-server/
       "command": "npx",
       "args": [
         "-y",
-        "local-file-operation-mcp@file:/path/to/project"
-      ]
+        "ax-local-operations-mcp@file:/path/to/project"
+      ],
+      "env": {
+        "NODE_PATH": "/path/to/project",
+        "PATH": "/path/to/node/bin:/usr/local/bin:/usr/bin:/bin"
+      }
     }
   }
 }

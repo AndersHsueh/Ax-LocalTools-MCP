@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "ax_local_operations": {
-      "command": "/Users/xueyuheng/.nvm/versions/node/v22.16.0/bin/node",
-      "args": ["/Users/xueyuheng/research/mcp/index.js"],
+      "command": "npx",
+      "args": [
+        "-y",
+        "ax-local-operations-mcp@file:/Users/xueyuheng/research/mcp"
+      ],
       "env": {
         "NODE_PATH": "/Users/xueyuheng/research/mcp",
         "PATH": "/Users/xueyuheng/.nvm/versions/node/v22.16.0/bin:/usr/local/bin:/usr/bin:/bin"
