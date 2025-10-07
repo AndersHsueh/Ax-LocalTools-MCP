@@ -7,7 +7,8 @@
   - 最佳实践: 使用 `Qwen` 应用, 加入 ax_local_operations 这个MCP之后,  qwen 可以接受用户的指示, 从而完成一些诸如编码, 部署环境, 检测设备硬件等等的实际工作. 而不是仅仅聊天.  还可以使用 `Jan`,`lmStudio` 这些应用都可以加入ax_local_operations 这个MCP之后，从而实现更智能的助手功能。 
   - 对比其它MCP, 比如其它的本地文件MCP, 专注于文件操作. 但没有命令执行工具，所以这个MCP适合做对话应用，而不是命令行工具。 
 
-## 使用注意, 在对话中建议第一句就告诉AI: “当前的工作目录是: `/User/research/work`”, 这样可以让AI在工作中使用临时写入文件不必影响原设备环境. 
+## 使用注意,:
+  - 在对话中建议第一句就告诉AI: “当前的工作目录是: `/User/research/work`”, 这样可以让AI在工作中使用临时写入文件不必影响原设备环境. 
 
 ## 🔧 开发者与 API 状态概览
 
@@ -184,13 +185,13 @@ npm install
       "command": "npx",
       "args": [
         "-y",
-        "local-file-operation-mcp@file:/Users/abc/research/mcp"
+        "ax-local-operations-mcp@file:/Users/abc/research/mcp"
       ]
     }
   }
 }
 
-### 注意这里的 "local-file-operation-mcp@file:/Users/abc/research/mcp"   @file: 后面是下载到的文件夹的位置.要改成自己的路径.
+### 注意这里的 "ax-local-operations-mcp@file:/Users/abc/research/mcp"   @file: 后面是下载到的文件夹的位置.要改成自己的路径.
 
 ```
 
@@ -669,7 +670,7 @@ mcp/
 
 ### 调试方法
 
-1. **手动测试** - 运行 `npx -y local-file-operation-mcp@file:/Users/abc/research/mcp`
+1. **手动测试** - 运行 `npx -y ax-local-operations-mcp@file:/Users/abc/research/mcp`
 2. **检查日志** - 查看大模型应用的错误日志
 3. **验证配置** - 确认配置文件格式正确
 
@@ -772,28 +773,28 @@ MIT License
 ### 全局安装
 
 ```bash
-npm install -g local-file-operation-mcp
+npm install -g ax-local-operations-mcp
 ```
 
-安装后，可在支持 MCP 的客户端中直接引用可执行文件 `local-file-operation-mcp`。
+安装后，可在支持 MCP 的客户端中直接引用可执行文件 `ax-local-operations-mcp`。
 
 ### 直接使用 npx
 
 无需安装，直接启动：
 
 ```bash
-npx -y local-file-operation-mcp
+npx -y ax-local-operations-mcp
 ```
 
 ### 在 LM Studio 中使用
 
-将可执行文件设置为 `local-file-operation-mcp`（无需绝对路径）：
+将可执行文件设置为 `ax-local-operations-mcp`（无需绝对路径）：
 
 ```json
 {
   "mcpServers": {
     "ax_local_operations": {
-      "command": "local-file-operation-mcp"
+      "command": "ax-local-operations-mcp"
     }
   }
 }
@@ -808,7 +809,7 @@ npx -y local-file-operation-mcp
   "mcpServers": {
     "ax_local_operations": {
       "command": "npx",
-      "args": ["-y", "local-file-operation-mcp"]
+      "args": ["-y", "ax-local-operations-mcp"]
     }
   }
 }

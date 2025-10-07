@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "ax_local_operations": {
-      "command": "/Users/xueyuheng/.nvm/versions/node/v22.16.0/bin/node",
+      "command": "node",
       "args": ["/Users/xueyuheng/research/mcp/index.js"],
       "env": {
         "NODE_PATH": "/Users/xueyuheng/research/mcp",
