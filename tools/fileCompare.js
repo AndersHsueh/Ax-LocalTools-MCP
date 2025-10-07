@@ -12,40 +12,35 @@ class FileCompareTool {
   }
 
   async handle(args) {
-    const { file1, file2, output_format = 'text' } = args;
+    const { file1, file2, source_path, target_path, output_format = 'text' } = args;
+    const left = file1 || source_path;
+    const right = file2 || target_path;
+    if (!left || !right) throw new Error('缺少文件参数: 需要 file1/file2 或 source_path/target_path');
 
     // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(file1) || !this.securityValidator.isPathAllowed(file2)) {
+    if (!this.securityValidator.isPathAllowed(left) || !this.securityValidator.isPathAllowed(right)) {
       throw new Error('不允许比较指定路径的文件');
     }
 
     try {
       const [content1, content2] = await Promise.all([
-        fs.readFile(file1, 'utf8'),
-        fs.readFile(file2, 'utf8')
+        fs.readFile(left, 'utf8'),
+        fs.readFile(right, 'utf8')
       ]);
 
-      const comparison = this.compareContents(content1, content2, file1, file2);
+      const comparison = this.compareContents(content1, content2, left, right);
+      const stats = this.diffStats(comparison.differences);
+      const payload = { ...comparison, diff_stats: stats };
       
       if (output_format === 'json') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(comparison, null, 2)
-            }
-          ]
-        };
-      } else {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: this.formatTextComparison(comparison)
-            }
-          ]
-        };
+        return { content: [{ type: 'json', json: payload }] };
+      } else if (output_format === 'both') {
+        return { content: [
+          { type: 'text', text: this.formatTextComparison(payload) },
+          { type: 'json', json: payload }
+        ]};
       }
+      return { content: [{ type: 'text', text: this.formatTextComparison(payload) }] };
 
     } catch (error) {
       if (error.code === 'ENOENT') {
@@ -124,6 +119,16 @@ class FileCompareTool {
     }
 
     return result;
+  }
+
+  diffStats(differences) {
+    const stats = { added: 0, removed: 0, modified: 0 };
+    for (const d of differences) {
+      if (d.type === 'added') stats.added++;
+      else if (d.type === 'removed') stats.removed++;
+      else if (d.type === 'modified') stats.modified++;
+    }
+    return stats;
   }
 }
 

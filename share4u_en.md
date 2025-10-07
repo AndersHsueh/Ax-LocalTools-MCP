@@ -1,8 +1,8 @@
-# 🚀 MCP Server Development Guide Prompt
+# 🚀 AX MCP Server Development Guide Prompt
 
 ## 📋 Task Description
 
-Please help me create a complete MCP (Model Context Protocol) server project that implements local file operations and command execution functionality.
+Please help me create a complete MCP (Model Context Protocol) server project named `ax_local_operations` that implements local file operations and command execution functionality.
 
 ## 🎯 Core Functionality Requirements
 
@@ -92,7 +92,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "/path/to/node",
       "args": ["/path/to/index.js"],
       "env": {
@@ -108,7 +108,7 @@ mcp-server/
 ```json
 {
   "mcpServers": {
-    "file_operation": {
+    "ax_local_operations": {
       "command": "npx",
       "args": [
         "-y",

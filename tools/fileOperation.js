@@ -5,32 +5,48 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { buildOutput } = require('../lib/output');
+const { ERR } = require('../errors');
 
 class FileOperationTool {
   constructor(securityValidator) {
     this.securityValidator = securityValidator;
   }
 
-  // 解析路径，支持工作目录
+  // 兼容旧方法（将逐步移除）
   resolvePath(filePath, workingDirectory = null) {
-    if (workingDirectory && !path.isAbsolute(filePath)) {
-      return path.resolve(workingDirectory, filePath);
-    }
-    return path.resolve(filePath);
+    return this.securityValidator.resolveAndAssert(filePath, workingDirectory);
   }
 
   async handle(args) {
-    const { operation, path: filePath, content, working_directory } = args;
+  const { operation, path: filePath, file_path, dir_path, content, working_directory, output_format = 'text' } = args;
+    const targetPath = filePath || file_path || dir_path; // alias 归一
+    if (!targetPath) throw ERR.INVALID_ARGS('缺少 path/file_path/dir_path 参数');
 
-    // 检查路径是否被允许（支持工作目录）
-    if (!this.securityValidator.isPathAllowed(filePath, working_directory)) {
-      throw new Error(`不允许操作路径: ${filePath}`);
+    // 检查路径是否被允许（支持工作目录；相对路径默认home）
+    if (!this.securityValidator.isPathAllowed(targetPath, working_directory)) {
+      throw ERR.PATH_DENIED(targetPath);
     }
 
     switch (operation) {
-  async readFile(filePath, workingDirectory = null) {
+      case 'read':
+  return await this.readFile(targetPath, working_directory, output_format);
+      case 'write':
+  return await this.writeFile(targetPath, content, working_directory, output_format);
+      case 'list':
+  return await this.listDirectory(targetPath, working_directory, output_format);
+      case 'create_dir':
+  return await this.createDirectory(targetPath, working_directory, output_format);
+      case 'delete':
+  return await this.deleteFileOrDirectory(targetPath, working_directory, output_format);
+      default:
+        throw new Error(`不支持的操作类型: ${operation}`);
+    }
+  }
+
+  async readFile(filePath, workingDirectory = null, outputFormat) {
     try {
-      const fullPath = this.resolvePath(filePath, workingDirectory);
+      const fullPath = this.securityValidator.resolveAndAssert(filePath, workingDirectory);
       
       // 读取文件的一部分来检测是否为二进制文件
       const fd = await fs.open(fullPath, 'r');
@@ -44,153 +60,78 @@ class FileOperationTool {
       }
 
       // 如果不是二进制文件，则正常读取全部内容
-      const content = await fs.readFile(fullPath, 'utf8');
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `文件内容 (${fullPath}):\n${content}`
-          }
-        ]
-      };
+      const contentData = await fs.readFile(fullPath, 'utf8');
+      return buildOutput(outputFormat, `文件内容 (${fullPath}):\n${contentData}`, { action: 'read', path: fullPath, content: contentData });
     } catch (error) {
       if (error.message.includes('不支持读取二进制文件')) {
         // 重新抛出我们自己定义的二进制文件错误
-        throw error;
+        throw ERR.INVALID_ARGS(error.message);
       } else if (error.code === 'ENOENT') {
-        throw new Error(`文件不存在: ${filePath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限读取文件: ${filePath}`);
+        throw ERR.NOT_FOUND(filePath);
+      } else if (error.code === 'E_PATH_DENIED') {
+        throw error;
       } else {
-        throw new Error(`读取文件失败: ${error.message}`);
-      }
-    }
-  }
-    try {
-      const fullPath = this.resolvePath(filePath, workingDirectory);
-      const content = await fs.readFile(fullPath, 'utf8');
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `文件内容 (${fullPath}):\n${content}`
-          }
-        ]
-      };
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`文件不存在: ${filePath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限读取文件: ${filePath}`);
-      } else {
-        throw new Error(`读取文件失败: ${error.message}`);
+        throw ERR.INVALID_ARGS(`读取文件失败: ${error.message}`);
       }
     }
   }
 
-  async writeFile(filePath, content, workingDirectory = null) {
+  async writeFile(filePath, content, workingDirectory = null, outputFormat) {
     try {
-      const fullPath = this.resolvePath(filePath, workingDirectory);
+      const fullPath = this.securityValidator.resolveAndAssert(filePath, workingDirectory);
       await fs.writeFile(fullPath, content, 'utf8');
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `成功写入文件: ${fullPath}`
-          }
-        ]
-      };
+  return buildOutput(outputFormat, `成功写入文件: ${fullPath}`, { action: 'write', path: fullPath, size: Buffer.byteLength(content || '', 'utf8') });
     } catch (error) {
-      if (error.code === 'EACCES') {
-        throw new Error(`没有权限写入文件: ${filePath}`);
-      } else {
-        throw new Error(`写入文件失败: ${error.message}`);
-      }
+      if (error.code === 'E_PATH_DENIED') throw error;
+      if (error.code === 'EACCES') throw ERR.INVALID_ARGS(`没有权限写入文件: ${filePath}`);
+      throw ERR.INVALID_ARGS(`写入文件失败: ${error.message}`);
     }
   }
 
-  async listDirectory(dirPath, workingDirectory = null) {
+  async listDirectory(dirPath, workingDirectory = null, outputFormat) {
     try {
-      const fullPath = this.resolvePath(dirPath, workingDirectory);
+      const fullPath = this.securityValidator.resolveAndAssert(dirPath, workingDirectory);
       const items = await fs.readdir(fullPath, { withFileTypes: true });
       const result = items.map(item => {
         const type = item.isDirectory() ? '[目录]' : '[文件]';
         return `${type} ${item.name}`;
       }).join('\n');
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `目录内容 (${fullPath}):\n${result}`
-          }
-        ]
-      };
+      return buildOutput(outputFormat, `目录内容 (${fullPath}):\n${result}`, { action: 'list', path: fullPath, entries: items.map(i => ({ name: i.name, type: i.isDirectory() ? 'directory' : 'file' })) });
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`目录不存在: ${dirPath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限访问目录: ${dirPath}`);
-      } else {
-        throw new Error(`列出目录失败: ${error.message}`);
-      }
+      if (error.code === 'ENOENT') throw ERR.NOT_FOUND(dirPath);
+      if (error.code === 'E_PATH_DENIED') throw error;
+      throw ERR.INVALID_ARGS(`列出目录失败: ${error.message}`);
     }
   }
 
-  async createDirectory(dirPath, workingDirectory = null) {
+  async createDirectory(dirPath, workingDirectory = null, outputFormat) {
     try {
-      const fullPath = this.resolvePath(dirPath, workingDirectory);
+      const fullPath = this.securityValidator.resolveAndAssert(dirPath, workingDirectory);
       await fs.mkdir(fullPath, { recursive: true });
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `成功创建目录: ${fullPath}`
-          }
-        ]
-      };
+  return buildOutput(outputFormat, `成功创建目录: ${fullPath}`, { action: 'create_dir', path: fullPath, created: true });
     } catch (error) {
-      if (error.code === 'EACCES') {
-        throw new Error(`没有权限创建目录: ${dirPath}`);
-      } else {
-        throw new Error(`创建目录失败: ${error.message}`);
-      }
+      if (error.code === 'E_PATH_DENIED') throw error;
+      if (error.code === 'EACCES') throw ERR.INVALID_ARGS(`没有权限创建目录: ${dirPath}`);
+      throw ERR.INVALID_ARGS(`创建目录失败: ${error.message}`);
     }
   }
 
-  async deleteFileOrDirectory(filePath, workingDirectory = null) {
+  async deleteFileOrDirectory(filePath, workingDirectory = null, outputFormat) {
     try {
-      const fullPath = this.resolvePath(filePath, workingDirectory);
+      const fullPath = this.securityValidator.resolveAndAssert(filePath, workingDirectory);
       const stats = await fs.stat(fullPath);
       if (stats.isDirectory()) {
         await fs.rmdir(fullPath, { recursive: true });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `成功删除目录: ${fullPath}`
-            }
-          ]
-        };
+  return buildOutput(outputFormat, `成功删除目录: ${fullPath}`, { action: 'delete', path: fullPath, type: 'directory', deleted: true });
       } else {
         await fs.unlink(fullPath);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `成功删除文件: ${fullPath}`
-            }
-          ]
-        };
+  return buildOutput(outputFormat, `成功删除文件: ${fullPath}`, { action: 'delete', path: fullPath, type: 'file', deleted: true });
       }
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`路径不存在: ${filePath}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限删除: ${filePath}`);
-      } else {
-        throw new Error(`删除失败: ${error.message}`);
-      }
+      if (error.code === 'ENOENT') throw ERR.NOT_FOUND(filePath);
+      if (error.code === 'E_PATH_DENIED') throw error;
+      if (error.code === 'EACCES') throw ERR.INVALID_ARGS(`没有权限删除: ${filePath}`);
+      throw ERR.INVALID_ARGS(`删除失败: ${error.message}`);
     }
   }
 }

@@ -11,16 +11,18 @@ class FileEditTool {
   }
 
   async handle(args) {
-    const { operation, path: filePath, start_line, end_line, content, encoding = 'utf8' } = args;
+    const { operation, path: filePath, file_path, start_line, end_line, content, encoding = 'utf8', output_format = 'text' } = args;
+    const target = filePath || file_path;
+    if (!target) throw new Error('缺少 path 或 file_path 参数');
 
     // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(filePath)) {
-      throw new Error(`不允许操作路径: ${filePath}`);
+    if (!this.securityValidator.isPathAllowed(target)) {
+      throw new Error(`不允许操作路径: ${target}`);
     }
 
     try {
       // 读取文件内容
-      const fileContent = await fs.readFile(filePath, encoding);
+  const fileContent = await fs.readFile(target, encoding);
       const lines = fileContent.split(/\r?\n/);
       const totalLines = lines.length;
 
@@ -78,22 +80,17 @@ class FileEditTool {
 
       // 写回文件
       const newContent = modifiedLines.join('\n');
-      await fs.writeFile(filePath, newContent, encoding);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `${result}\n文件: ${filePath}\n总行数: ${totalLines} → ${modifiedLines.length}`
-          }
-        ]
-      };
+      await fs.writeFile(target, newContent, encoding);
+      if (output_format === 'json') {
+        return { content: [{ type: 'json', json: { action: operation, path: target, total_lines_before: totalLines, total_lines_after: modifiedLines.length } }] };
+      }
+      return { content: [{ type: 'text', text: `${result}\n文件: ${target}\n总行数: ${totalLines} → ${modifiedLines.length}` }] };
 
     } catch (error) {
       if (error.code === 'ENOENT') {
-        throw new Error(`文件不存在: ${filePath}`);
+  throw new Error(`文件不存在: ${target}`);
       } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限操作文件: ${filePath}`);
+  throw new Error(`没有权限操作文件: ${target}`);
       } else {
         throw new Error(`文件编辑失败: ${error.message}`);
       }
