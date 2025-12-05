@@ -48,14 +48,38 @@ class FileOperationTool {
     try {
       const fullPath = this.securityValidator.resolveAndAssert(filePath, workingDirectory);
       
-      // 读取文件的一部分来检测是否为二进制文件
+      // 读取文件的前几个字节来检测是否为二进制文件
       const fd = await fs.open(fullPath, 'r');
       const buffer = Buffer.alloc(512); // 读取前512字节作为样本
       const { bytesRead } = await fd.read(buffer, 0, 512, 0);
       await fd.close();
 
-      // 检查缓冲区是否包含null字节，这通常是二进制文件的标志
-      if (buffer.indexOf(0) !== -1) {
+      // 检查已读取的字节范围（0到bytesRead）是否包含null字节，这通常是二进制文件的标志
+      let isBinary = false;
+      for (let i = 0; i < bytesRead; i++) {
+        if (buffer[i] === 0) {
+          isBinary = true;
+          break;
+        }
+      }
+      
+      if (isBinary) {
+        throw new Error(`不支持读取二进制文件: ${filePath}`);
+      }
+      
+      // 更精确地检查：检查已读取的字节中是否包含过多的不可打印字符，也可能是二进制文件
+      let binaryCount = 0;
+      let totalChecked = 0;
+      for (let i = 0; i < bytesRead; i++) {
+        totalChecked++;
+        // 检查是否为不可打印的ASCII字符（除了常见的空白字符等）
+        if ((buffer[i] < 32 && ![0x09, 0x0A, 0x0D].includes(buffer[i])) || buffer[i] === 0x7F) {
+          binaryCount++;
+        }
+      }
+      
+      // 如果不可打印字符超过一定比例，判定为二进制文件
+      if (totalChecked > 0 && (binaryCount / totalChecked) > 0.3) {
         throw new Error(`不支持读取二进制文件: ${filePath}`);
       }
 
