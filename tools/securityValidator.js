@@ -15,25 +15,11 @@ class SecurityValidator {
 
   isPathAllowed(filePath, workingDirectory = null) {
     try {
-      // 检查是否是项目根目录路径，如果是，则自动使用项目根目录作为工作目录
-      const projectRoot = '/Users/xueyuheng/research/mcp';
-      const guerrillaPath = '/users/xueyuheng/research/guerrilla';
-      let effectiveWorkingDir = workingDirectory;
-      
-      if ((filePath.startsWith(projectRoot) || filePath.startsWith(guerrillaPath)) && !workingDirectory) {
-        // 根据路径类型选择适当的工作目录
-        if (filePath.startsWith(projectRoot)) {
-          effectiveWorkingDir = projectRoot;
-        } else if (filePath.startsWith(guerrillaPath)) {
-          effectiveWorkingDir = guerrillaPath;
-        }
-      }
-      
       // 如果提供了工作目录，验证文件路径是否在工作目录内
-      if (effectiveWorkingDir) {
-        const abs = resolveUserPath(filePath, { workingDir: effectiveWorkingDir });
+      if (workingDirectory) {
+        const abs = resolveUserPath(filePath, { workingDir: workingDirectory });
         // 验证路径是否在指定的工作目录内
-        const resolvedWorkingDir = path.resolve(effectiveWorkingDir);
+        const resolvedWorkingDir = path.resolve(workingDirectory);
         const absPath = path.resolve(abs);
         if (!absPath.startsWith(resolvedWorkingDir + path.sep) && absPath !== resolvedWorkingDir) {
           return false;
@@ -41,7 +27,7 @@ class SecurityValidator {
         return true;
       } else {
         // 如果没有提供工作目录，则检查路径是否在用户家目录内
-        const abs = resolveUserPath(filePath, { workingDir: effectiveWorkingDir });
+        const abs = resolveUserPath(filePath);
         assertInHome(abs);
         return true;
       }
@@ -51,24 +37,10 @@ class SecurityValidator {
   }
 
   resolveAndAssert(filePath, workingDirectory = null) {
-    // 检查是否是项目根目录路径，如果是，则自动使用项目根目录作为工作目录
-    const projectRoot = '/Users/xueyuheng/research/mcp';
-    const guerrillaPath = '/users/xueyuheng/research/guerrilla';
-    let effectiveWorkingDir = workingDirectory;
-    
-    if ((filePath.startsWith(projectRoot) || filePath.startsWith(guerrillaPath)) && !workingDirectory) {
-      // 根据路径类型选择适当的工作目录
-      if (filePath.startsWith(projectRoot)) {
-        effectiveWorkingDir = projectRoot;
-      } else if (filePath.startsWith(guerrillaPath)) {
-        effectiveWorkingDir = guerrillaPath;
-      }
-    }
-    
     // 如果提供了工作目录，验证文件路径是否在工作目录内
-    if (effectiveWorkingDir) {
-      const abs = resolveUserPath(filePath, { workingDir: effectiveWorkingDir });
-      const resolvedWorkingDir = path.resolve(effectiveWorkingDir);
+    if (workingDirectory) {
+      const abs = resolveUserPath(filePath, { workingDir: workingDirectory });
+      const resolvedWorkingDir = path.resolve(workingDirectory);
       const absPath = path.resolve(abs);
       if (!absPath.startsWith(resolvedWorkingDir + path.sep) && absPath !== resolvedWorkingDir) {
         throw ERR.PATH_DENIED(filePath);
@@ -76,7 +48,7 @@ class SecurityValidator {
       return abs;
     } else {
       // 如果没有提供工作目录，则使用家目录限制
-      const abs = resolveUserPath(filePath, { workingDir: effectiveWorkingDir });
+      const abs = resolveUserPath(filePath);
       try {
         return assertInHome(abs);
       } catch (e) {

@@ -22,7 +22,6 @@
   "author": "MCP Server",
   "license": "MIT",
   "dependencies": {
-    "@mastergo/magic-mcp": "^0.1.2",
     "@modelcontextprotocol/sdk": "^1.19.1"
   },
   "engines": {

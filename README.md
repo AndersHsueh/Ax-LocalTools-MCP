@@ -8,7 +8,53 @@
   - 对比其它MCP, 比如其它的本地文件MCP, 专注于文件操作. 但没有命令执行工具，所以这个MCP适合做对话应用，而不是命令行工具。 
 
 ## 使用注意,:
-  - 在对话中建议第一句就告诉AI: “当前的工作目录是: `/User/research/work`”, 这样可以让AI在工作中使用临时写入文件不必影响原设备环境. 
+  - 在对话中建议第一句就告诉AI: "当前的工作目录是: `/User/research/work`", 这样可以让AI在工作中使用临时写入文件不必影响原设备环境.
+
+## 🌐 平台兼容性
+
+### 支持的平台
+| 平台 | 支持状态 | 说明 |
+|------|---------|------|
+| macOS | ✅ 完全支持 | 所有工具均可正常使用 |
+| Linux | ✅ 完全支持 | 所有工具均可正常使用（包括 sudo_config） |
+| Windows | ✅ 基本支持 | 11个工具可用，2个工具部分支持 |
+
+### 工具平台支持详情
+
+#### 完全跨平台支持（Windows/macOS/Linux）
+以下工具在所有平台上均可正常使用：
+- ✅ file_operation - 文件操作
+- ✅ file_edit - 文件编辑
+- ✅ file_search - 文件搜索
+- ✅ file_compare - 文件比较
+- ✅ file_hash - 文件哈希
+- ✅ file_permissions - 文件权限管理（使用系统对应的命令：attrib/icacls 或 chmod）
+- ✅ file_watch - 文件监控
+- ✅ execute_command - 命令执行
+- ✅ task_manager - 任务管理
+- ✅ time_tool - 时间工具
+- ✅ environment_memory - 环境记忆
+
+#### 平台限制
+**file_archive** - 文件压缩工具
+- macOS/Linux: ✅ 完全支持（使用系统命令 zip/unzip/tar/gzip）
+- Windows: ⚠️ 需要安装额外工具
+  - 需要安装 Git Bash、WSL 或第三方压缩工具
+  - 或手动安装 zip/unzip/tar/gzip 命令行工具
+
+**sudo_config** - Sudo配置工具
+- Linux: ✅ 完全支持
+- macOS: ❌ 不支持（不适用）
+- Windows: ❌ 不支持（不适用）
+
+### Windows 用户注意事项
+1. **路径格式**: 使用反斜杠 `\` 或正斜杠 `/` 均可，Node.js 会自动处理
+2. **权限管理**: 使用 Windows 原生的 `attrib` 和 `icacls` 命令
+3. **压缩工具**: 如需使用 file_archive，建议：
+   - 安装 [Git for Windows](https://git-scm.com/download/win)（自带 Bash 和常用工具）
+   - 或使用 WSL (Windows Subsystem for Linux)
+   - 或安装 [7-Zip](https://www.7-zip.org/) 并将其添加到系统 PATH
+
 
 ## 🔧 开发者与 API 状态概览
 
