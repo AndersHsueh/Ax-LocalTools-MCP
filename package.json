@@ -1,6 +1,6 @@
 {
   "name": "ax-local-operations-mcp",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "本地文件操作 MCP 服务器：安全的读写、编辑、搜索、比较、哈希、权限、压缩、监控、命令与任务管理工具集。",
   "main": "index.js",
   "bin": {
@@ -33,6 +33,8 @@
   },
   "files": [
     "index.js",
+    "errors.js",
+    "responses.js",
     "tools/",
     "lib/",
     "README.md",
