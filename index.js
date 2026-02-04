@@ -69,14 +69,15 @@ class SecureMCPServer {
           throw new Error(`未知工具: ${name}`);
         }
       } catch (error) {
-        // 结构化错误可在此扩展（TODO: ToolError 判断）
+        // 结构化错误响应，添加 isError 标记（MCP 规范）
         return {
           content: [
             {
               type: 'text',
-              text: `错误: ${error.message}`
+              text: error.message
             }
-          ]
+          ],
+          isError: true
         };
       }
     });
