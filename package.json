@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitee.com/andershsueh/ax-mcp-server.git"
+    "url": "git+https://github.com/AndersHsueh/Ax-LocalTools-MCP.git"
   },
   "files": [
     "index.js",
