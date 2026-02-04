@@ -1,4 +1,4 @@
-# AX本地操作 MCP 服务器 v2.5.0
+# AX本地操作 MCP 服务器 v2.6.0
 
 一个功能强大的 MCP (Model Context Protocol) 服务器，名为 `ax_local_operations`，为大模型应用提供安全的本地文件操作、行级编辑、文件搜索、文件比较、文件哈希、文件权限、文件压缩、文件监控、命令执行和任务管理功能。
 
@@ -737,6 +737,15 @@ MIT License
 **享受强大的本地文件操作能力！** 🚀✨
 
 ## 📚 版本历史
+
+### v2.6.0 (2025-02-04)
+- 添加 MCP annotations 支持（readOnlyHint, destructiveHint 等）
+- 添加 `isError` 标记到错误响应
+- 重构命令执行为 spawn 模式提高安全性
+- 添加 outputSchema 定义支持响应验证
+- 完善参数描述和使用示例
+- 添加文件大小限制（10MB）和截断处理
+- 新增 CLAUDE.md 为 AI 开发提供指导
 
 ### v2.5.0 (2025-12-05)
 - 将版本号从 2.4.1 升级到 2.5.0
