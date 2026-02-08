@@ -23,22 +23,15 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Setup Node.js
+      - name: Setup Node.js with OIDC
         uses: actions/setup-node@v4
         with:
           node-version: '20.8.1'
           registry-url: 'https://registry.npmjs.org/'
-          # Enable OIDC authentication
           scope: '@'
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Configure npm for OIDC
-        run: |
-          npm config set //registry.npmjs.org/:_authType=oidc
-          npm config set //registry.npmjs.org/:always-auth=true
-        if: github.event_name == 'push'
 
       - name: Release
         env:
