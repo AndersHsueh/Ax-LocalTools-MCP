@@ -23,41 +23,173 @@ class EnvironmentMemoryAdapter {
       switch (operation) {
         case 'read': {
           const envData = this.environmentMemory.readEnvironment();
+          const result = { operation: 'read', status: 'ok', data: envData };
+          
           if (output_format === 'json') {
-            return { content: [{ type: 'json', json: envData }] };
+            return { content: [{ type: 'json', json: result }] };
           } else if (output_format === 'both') {
-            return { content: [ { type: 'text', text: JSON.stringify(envData, null, 2) }, { type: 'json', json: envData } ] };
+            return { content: [ 
+              { type: 'text', text: JSON.stringify(envData, null, 2) }, 
+              { type: 'json', json: result } 
+            ]};
           }
           return { content: [{ type: 'text', text: JSON.stringify(envData, null, 2) }] };
         }
 
         case 'update': {
-          if (!key || !value) throw new Error('更新操作需要提供key和value参数');
+          if (!key || !value) {
+            const errorResult = { 
+              operation: 'update', 
+              status: 'error', 
+              error: '更新操作需要提供key和value参数',
+              key: key || null
+            };
+            
+            if (output_format === 'json') {
+              return { content: [{ type: 'json', json: errorResult }], isError: true };
+            } else if (output_format === 'both') {
+              return { 
+                content: [ 
+                  { type: 'text', text: `错误: 更新操作需要提供key和value参数` }, 
+                  { type: 'json', json: errorResult } 
+                ], 
+                isError: true 
+              };
+            }
+            return { 
+              content: [{ type: 'text', text: `错误: 更新操作需要提供key和value参数` }], 
+              isError: true 
+            };
+          }
+          
           this.environmentMemory.updateEnvironment(key, value, description);
-          const data = { status: 'ok', action: 'update', key, value, description: description || '' };
-          if (output_format === 'json') return { content: [{ type: 'json', json: data }] };
-          if (output_format === 'both') return { content: [ { type: 'text', text: `成功更新环境变量: ${key}=${value}` }, { type: 'json', json: data } ] };
-          return { content: [{ type: 'text', text: `成功更新环境变量: ${key}=${value}` }] };
+          const result = { 
+            status: 'ok', 
+            operation: 'update', 
+            key, 
+            value: value ? '[HIDDEN]' : undefined, 
+            description: description || '' 
+          };
+          
+          if (output_format === 'json') {
+            return { content: [{ type: 'json', json: result }] };
+          }
+          if (output_format === 'both') {
+            return { 
+              content: [ 
+                { type: 'text', text: `成功更新环境变量: ${key}` }, 
+                { type: 'json', json: result } 
+              ] 
+            };
+          }
+          return { content: [{ type: 'text', text: `成功更新环境变量: ${key}` }] };
         }
 
         case 'get': {
-          if (!key) throw new Error('获取操作需要提供key参数');
+          if (!key) {
+            const errorResult = { 
+              operation: 'get', 
+              status: 'error', 
+              error: '获取操作需要提供key参数'
+            };
+            
+            if (output_format === 'json') {
+              return { content: [{ type: 'json', json: errorResult }], isError: true };
+            } else if (output_format === 'both') {
+              return { 
+                content: [ 
+                  { type: 'text', text: `错误: 获取操作需要提供key参数` }, 
+                  { type: 'json', json: errorResult } 
+                ], 
+                isError: true 
+              };
+            }
+            return { 
+              content: [{ type: 'text', text: `错误: 获取操作需要提供key参数` }], 
+              isError: true 
+            };
+          }
+          
           const envValue = this.environmentMemory.getEnvironmentValue(key);
           if (envValue === null) {
-            if (output_format === 'json') return { content: [{ type: 'json', json: { status: 'not_found', key } }] };
-            if (output_format === 'both') return { content: [ { type: 'text', text: `环境变量 ${key} 不存在` }, { type: 'json', json: { status: 'not_found', key } } ] };
+            const result = { operation: 'get', status: 'not_found', key };
+            
+            if (output_format === 'json') {
+              return { content: [{ type: 'json', json: result }] };
+            }
+            if (output_format === 'both') {
+              return { 
+                content: [ 
+                  { type: 'text', text: `环境变量 ${key} 不存在` }, 
+                  { type: 'json', json: result } 
+                ] 
+              };
+            }
             return { content: [{ type: 'text', text: `环境变量 ${key} 不存在` }] };
           }
-          if (output_format === 'json') return { content: [{ type: 'json', json: { status: 'ok', key, value: envValue } }] };
-          if (output_format === 'both') return { content: [ { type: 'text', text: envValue }, { type: 'json', json: { status: 'ok', key, value: envValue } } ] };
+          
+          const result = { status: 'ok', operation: 'get', key, value: envValue };
+          
+          if (output_format === 'json') {
+            return { content: [{ type: 'json', json: result }] };
+          }
+          if (output_format === 'both') {
+            return { 
+              content: [ 
+                { type: 'text', text: envValue }, 
+                { type: 'json', json: result } 
+              ] 
+            };
+          }
           return { content: [{ type: 'text', text: envValue }] };
         }
 
         default:
-          throw new Error(`不支持的操作: ${operation}`);
+          const errorResult = { 
+            operation, 
+            status: 'error', 
+            error: `不支持的操作: ${operation}` 
+          };
+          
+          if (output_format === 'json') {
+            return { content: [{ type: 'json', json: errorResult }], isError: true };
+          } else if (output_format === 'both') {
+            return { 
+              content: [ 
+                { type: 'text', text: `错误: 不支持的操作: ${operation}` }, 
+                { type: 'json', json: errorResult } 
+              ], 
+              isError: true 
+            };
+          }
+          return { 
+            content: [{ type: 'text', text: `错误: 不支持的操作: ${operation}` }], 
+            isError: true 
+          };
       }
     } catch (error) {
-      throw new Error(`环境记忆工具错误: ${error.message}`);
+      const errorResult = { 
+        operation, 
+        status: 'error', 
+        error: `环境记忆工具错误: ${error.message}`,
+        key: key || null
+      };
+      
+      if (output_format === 'json') {
+        return { content: [{ type: 'json', json: errorResult }], isError: true };
+      } else if (output_format === 'both') {
+        return { 
+          content: [ 
+            { type: 'text', text: `环境记忆工具错误: ${error.message}` }, 
+            { type: 'json', json: errorResult } 
+          ], 
+          isError: true 
+        };
+      }
+      return { 
+        content: [{ type: 'text', text: `环境记忆工具错误: ${error.message}` }], 
+        isError: true 
+      };
     }
   }
 }

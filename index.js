@@ -138,11 +138,22 @@ class SecureMCPServer {
         }
       } catch (error) {
         // 结构化错误响应，添加 isError 标记（MCP 规范）
+        // 确保即使工具抛出错误也返回符合输出模式的结构化内容
+        const errorResponse = {
+          status: 'error',
+          error: error.message,
+          name: name
+        };
+
         return {
           content: [
             {
               type: 'text',
               text: error.message
+            },
+            {
+              type: 'json',
+              json: errorResponse
             }
           ],
           isError: true

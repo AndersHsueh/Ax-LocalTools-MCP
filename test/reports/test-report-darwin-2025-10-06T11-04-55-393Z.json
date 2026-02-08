@@ -1,0 +1,296 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "startTime": 1759748695382,
+    "endTime": 1759748695393,
+    "duration": 11
+  },
+  "results": [
+    {
+      "testName": "环境设置",
+      "category": "基础设施",
+      "status": "passed",
+      "details": {
+        "tempDir": "/var/folders/dz/dyhjdr_d5rzdpvwwt7cnrk780000gn/T/mcp-test-G2rHY8",
+        "filesCreated": 4
+      },
+      "timestamp": "2025-10-06T11:04:55.384Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "平台信息检测",
+      "category": "平台检测",
+      "status": "passed",
+      "details": {
+        "platformInfo": {
+          "platform": "darwin",
+          "isWindows": false,
+          "isMacOS": true,
+          "isLinux": false,
+          "isUnix": true,
+          "nodeVersion": "v22.16.0",
+          "architecture": "arm64"
+        }
+      },
+      "timestamp": "2025-10-06T11:04:55.384Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "路径配置检测",
+      "category": "平台检测",
+      "status": "passed",
+      "details": {
+        "pathConfig": {
+          "separator": "/",
+          "delimiter": ":",
+          "maxLength": 4096,
+          "caseSensitive": true,
+          "supportedFeatures": {
+            "longPaths": false,
+            "uncPaths": false,
+            "symbolicLinks": true,
+            "hiddenFiles": true,
+            "fileAttributes": false
+          }
+        }
+      },
+      "timestamp": "2025-10-06T11:04:55.384Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "递归监控支持检测",
+      "category": "平台检测",
+      "status": "passed",
+      "details": {
+        "recursiveSupport": true,
+        "expectedSupport": true
+      },
+      "timestamp": "2025-10-06T11:04:55.384Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "基本路径解析",
+      "category": "路径处理",
+      "status": "passed",
+      "details": {
+        "input": "test-file.txt",
+        "output": "/Users/xueyuheng/test-file.txt"
+      },
+      "timestamp": "2025-10-06T11:04:55.385Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "家目录验证",
+      "category": "路径处理",
+      "status": "passed",
+      "details": {},
+      "timestamp": "2025-10-06T11:04:55.385Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "路径安全验证",
+      "category": "路径处理",
+      "status": "passed",
+      "details": {
+        "safe": true,
+        "warnings": [],
+        "errors": [],
+        "normalizedPath": "/Users/xueyuheng/test-file.txt"
+      },
+      "timestamp": "2025-10-06T11:04:55.385Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "隐藏文件检测",
+      "category": "Unix路径",
+      "status": "passed",
+      "details": {
+        "path": ".hidden-file-test",
+        "detected": true
+      },
+      "timestamp": "2025-10-06T11:04:55.385Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "安全命令检测",
+      "category": "命令策略",
+      "status": "passed",
+      "details": {
+        "command": "ls -la",
+        "result": {
+          "level": "allow",
+          "reason": null,
+          "platform": "unix",
+          "commandType": "shell",
+          "suggestions": [],
+          "sudoInfo": null
+        }
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "危险命令检测",
+      "category": "命令策略",
+      "status": "passed",
+      "details": {
+        "command": "rm -rf /",
+        "result": {
+          "level": "warn",
+          "reason": "高风险命令",
+          "platform": "unix",
+          "commandType": "shell",
+          "suggestions": [],
+          "sudoInfo": null
+        }
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "Unix命令: sudo systemctl stop nginx",
+      "category": "Unix命令",
+      "status": "passed",
+      "details": {
+        "command": "sudo systemctl stop nginx",
+        "expected": "warn",
+        "actual": "warn"
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "Unix命令: chmod 777 file.txt",
+      "category": "Unix命令",
+      "status": "passed",
+      "details": {
+        "command": "chmod 777 file.txt",
+        "expected": "warn",
+        "actual": "warn"
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "Unix命令: cat file.txt",
+      "category": "Unix命令",
+      "status": "passed",
+      "details": {
+        "command": "cat file.txt",
+        "expected": "allow",
+        "actual": "allow"
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "权限读取",
+      "category": "文件权限",
+      "status": "passed",
+      "details": {
+        "file": "/var/folders/dz/dyhjdr_d5rzdpvwwt7cnrk780000gn/T/mcp-test-G2rHY8/test-file.txt",
+        "permissions": {
+          "platform": "unix",
+          "mode": 33188,
+          "octal": "644",
+          "symbolic": "rw-r--r--",
+          "owner": {
+            "read": true,
+            "write": true,
+            "execute": false
+          },
+          "group": {
+            "read": true,
+            "write": false,
+            "execute": false
+          },
+          "others": {
+            "read": true,
+            "write": false,
+            "execute": false
+          },
+          "specialBits": {
+            "sticky": false,
+            "setgid": false,
+            "setuid": false
+          }
+        }
+      },
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "Unix权限设置",
+      "category": "文件权限",
+      "status": "passed",
+      "details": {},
+      "timestamp": "2025-10-06T11:04:55.386Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "文件监控递归支持",
+      "category": "文件监控",
+      "status": "passed",
+      "details": {
+        "recursiveSupport": true,
+        "expectedSupport": true
+      },
+      "timestamp": "2025-10-06T11:04:55.387Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "文件监控接口",
+      "category": "文件监控",
+      "status": "passed",
+      "details": {
+        "note": "接口可用，实际监控功能需要集成测试验证"
+      },
+      "timestamp": "2025-10-06T11:04:55.387Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "路径解析性能",
+      "category": "性能测试",
+      "status": "passed",
+      "details": {
+        "operations": 1000,
+        "duration": 4,
+        "opsPerSecond": 250000
+      },
+      "timestamp": "2025-10-06T11:04:55.391Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "命令评估性能",
+      "category": "性能测试",
+      "status": "passed",
+      "details": {
+        "operations": 500,
+        "duration": 1,
+        "opsPerSecond": 500000
+      },
+      "timestamp": "2025-10-06T11:04:55.392Z",
+      "platform": "darwin"
+    },
+    {
+      "testName": "环境清理",
+      "category": "基础设施",
+      "status": "passed",
+      "details": {},
+      "timestamp": "2025-10-06T11:04:55.393Z",
+      "platform": "darwin"
+    }
+  ],
+  "platform": {
+    "platform": "darwin",
+    "isWindows": false,
+    "isMacOS": true,
+    "isLinux": false,
+    "isUnix": true,
+    "nodeVersion": "v22.16.0",
+    "architecture": "arm64"
+  }
+}

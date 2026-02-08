@@ -163,6 +163,29 @@ class CommandExecutionTool {
 
     // 检查工作目录是否被允许
     if (cwd && !this.securityValidator.isPathAllowed(cwd)) {
+      const errorResponse = {
+        status: 'error',
+        command,
+        cwd: cwd || null,
+        exit_code: -1,
+        stdout: '',
+        stderr: `错误: 不允许在工作目录 ${cwd} 中执行命令`,
+        duration_ms: 0,
+        truncated: false
+      };
+
+      if (output_format === 'json') {
+        return { content: [{ type: 'json', json: errorResponse }], isError: true };
+      }
+      if (output_format === 'both') {
+        return {
+          content: [
+            { type: 'text', text: `错误: 不允许在工作目录 ${cwd} 中执行命令` },
+            { type: 'json', json: errorResponse }
+          ],
+          isError: true
+        };
+      }
       return {
         content: [{ type: 'text', text: `错误: 不允许在工作目录 ${cwd} 中执行命令` }],
         isError: true
@@ -174,7 +197,33 @@ class CommandExecutionTool {
 
     // Deny 策略：直接拒绝
     if (policy.level === 'deny') {
-      throw ERR.DANGEROUS_CMD(command);
+      const errorResponse = {
+        status: 'error',
+        command,
+        cwd: cwd || null,
+        exit_code: -1,
+        stdout: '',
+        stderr: `危险命令被拒绝: ${command}`,
+        duration_ms: 0,
+        truncated: false
+      };
+
+      if (output_format === 'json') {
+        return { content: [{ type: 'json', json: errorResponse }], isError: true };
+      }
+      if (output_format === 'both') {
+        return {
+          content: [
+            { type: 'text', text: `危险命令被拒绝: ${command}` },
+            { type: 'json', json: errorResponse }
+          ],
+          isError: true
+        };
+      }
+      return {
+        content: [{ type: 'text', text: `危险命令被拒绝: ${command}` }],
+        isError: true
+      };
     }
 
     // Warn 策略：需要确认
@@ -182,9 +231,12 @@ class CommandExecutionTool {
       const warnResponse = {
         status: 'need_confirm',
         command,
-        policy,
-        message: '高风险命令，需要确认后才能执行',
-        hint: '添加 confirm=true 再次调用'
+        cwd: cwd || null,
+        exit_code: null,
+        stdout: '',
+        stderr: '',
+        duration_ms: 0,
+        truncated: false
       };
 
       if (output_format === 'json') {
@@ -222,9 +274,11 @@ class CommandExecutionTool {
         status: 'error',
         command,
         cwd: cwd || null,
-        policy,
-        error: error.message,
-        error_type: 'spawn_failed'
+        exit_code: -1,
+        stdout: '',
+        stderr: error.message,
+        duration_ms: Date.now() - started,
+        truncated: false
       };
 
       if (output_format === 'json') {

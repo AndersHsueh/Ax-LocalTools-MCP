@@ -1,3 +1,4 @@
+// Test file for MCP tool
 package main
 
 import "fmt"
