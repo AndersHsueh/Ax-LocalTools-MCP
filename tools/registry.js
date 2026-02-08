@@ -12,6 +12,7 @@ const TaskManagerTool = require('./taskManager');
 const TimeTool = require('./timeTool');
 const EnvironmentMemoryAdapter = require('./environmentMemoryAdapter');
 const SudoConfigTool = require('./sudoConfig');
+const WorkspaceManager = require('./workspaceManager');
 const platformUtils = require('../lib/platformUtils');
 
 const securityValidator = new SecurityValidator();
@@ -29,7 +30,8 @@ const instances = {
   execute_command: new CommandExecutionTool(securityValidator),
   task_manager: new TaskManagerTool(securityValidator),
   time_tool: new TimeTool(securityValidator),
-  environment_memory: new EnvironmentMemoryAdapter(securityValidator)
+  environment_memory: new EnvironmentMemoryAdapter(securityValidator),
+  workspace_manager: new WorkspaceManager(securityValidator)
 };
 
 // 只在Linux系统上添加sudo配置工具
@@ -460,7 +462,7 @@ const descriptors = [
     '环境记忆：读取、更新和获取环境变量。环境变量存储在 ~/.local_file_operations/.env 文件中。\n\n' +
     '示例：读取全部 { "operation": "read", "output_format": "json" }\n' +
     '示例：设置变量 { "operation": "update", "key": "PROJECT_PATH", "value": "/project" }', {
-    operation: { type: 'string', enum: ['read', 'update', 'get'], description: '操作：read(读取全部)、update(更新/新增)、get(获取指定)' },
+    operation: { type: 'string', enum: ['read', 'update', 'get'], description: DESCS.operation },
     key: { type: 'string', description: DESCS.key },
     value: { type: 'string', description: DESCS.value },
     output_format: { type: 'string', enum: ['text', 'json', 'both'], description: DESCS.output_format }
@@ -469,7 +471,22 @@ const descriptors = [
     destructiveHint: true,
     idempotentHint: false,
     openWorldHint: false
-  }, OUTPUT_SCHEMAS.environment_memory)
+  }, OUTPUT_SCHEMAS.environment_memory),
+
+  // workspace_manager: 工作目录管理
+  createDescriptor('workspace_manager',
+    '工作目录管理：获取、设置和清除工作目录。支持临时和默认工作目录。\n\n' +
+    '示例：获取当前工作目录 { "operation": "get_current", "output_format": "json" }\n' +
+    '示例：设置临时工作目录 { "operation": "set_temp", "workspace_path": "c:/user/a/note1" }', {
+    operation: { type: 'string', enum: ['get_current', 'set_temp', 'set_default', 'clear_temp', 'status'], description: '操作：get_current(获取当前)、set_temp(设置临时)、set_default(设置默认)、clear_temp(清除临时)、status(状态)' },
+    workspace_path: { type: 'string', description: '工作目录路径' },
+    output_format: { type: 'string', enum: ['text', 'json', 'both'], description: DESCS.output_format }
+  }, ['operation'], {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false
+  })
 ];
 
 // 只在Linux系统上添加sudo配置工具描述符

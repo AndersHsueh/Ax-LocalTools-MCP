@@ -21,6 +21,10 @@ const DEFAULT_ENV = {
         "description": "current path of llm",
         "value": "~/"
     },
+    "DEFAULT_WORKSPACE": {
+        "description": "Default workspace directory",
+        "value": require('path').join(require('os').homedir(), '.axlocalop', 'workspace')
+    },
     "OS": {
         "description": "os of current machine",
         "value": "macOS"

@@ -12,20 +12,37 @@
 // 重构：集中注册
 const { instances, getToolInstance } = require('./tools/registry.js');
 
+// 导入工作目录管理器
+const workspaceManager = require('./tools/workspaceManager.js');
+
 // 处理命令行参数
 if (process.argv.includes('--help')) {
   console.log(`AX Local Operations MCP Server v2.6.0\n`);
   console.log(`Usage: ax-local-operations-mcp [options]\n`);
   console.log(`Options:`);
-  console.log(`  --help        显示本帮助信息`);
-  console.log(`  --version     显示版本号\n`);
+  console.log(`  --help           显示本帮助信息`);
+  console.log(`  --version        显示版本号`);
+  console.log(`  --default-dir    设置默认工作目录\n`);
   console.log(`示例 (作为 MCP Server 被客户端通过 stdio 连接):`);
   console.log(`  npx -y ax-local-operations-mcp@file:/path/to/project`);
+  console.log(`  ax-local-operations-mcp --default-dir 'c:/user/a/note1'\n`);
   process.exit(0);
 }
 
 if (process.argv.includes('--version')) {
   console.log('2.6.0');
+  process.exit(0);
+}
+
+// 处理--default-dir参数
+const defaultDirIndex = process.argv.indexOf('--default-dir');
+if (defaultDirIndex !== -1 && defaultDirIndex + 1 < process.argv.length) {
+  const defaultDir = process.argv[defaultDirIndex + 1];
+  if (workspaceManager.setDefaultWorkspace(defaultDir)) {
+    console.log(`默认工作目录已设置为: ${defaultDir}`);
+  } else {
+    console.error(`设置默认工作目录失败: ${defaultDir}`);
+  }
   process.exit(0);
 }
 
@@ -62,9 +79,60 @@ class SecureMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
+        // 检查所有参数值中是否包含工作目录设置命令
+        let workspacePath = null;
+        
+        // 递归检查参数对象中的所有字符串值
+        function checkForWorkspaceCommand(obj) {
+          if (typeof obj === 'string') {
+            const parsedPath = workspaceManager.parseWorkspaceCommand(obj);
+            if (parsedPath) {
+              workspacePath = parsedPath;
+            }
+          } else if (typeof obj === 'object' && obj !== null) {
+            for (const key in obj) {
+              checkForWorkspaceCommand(obj[key]);
+              if (workspacePath) break;
+            }
+          }
+        }
+        
+        checkForWorkspaceCommand(args);
+        
+        // 如果找到工作目录命令，处理它并返回响应
+        if (workspacePath) {
+          if (workspaceManager.setTempWorkspace(workspacePath)) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `已设置临时工作目录为: ${workspacePath}`
+                }
+              ]
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `设置工作目录失败: ${workspacePath}`
+                }
+              ],
+              isError: true
+            };
+          }
+        }
+
+        // 为工具调用添加工作目录参数（如果未提供）
+        const toolArgs = { ...args };
+        if (!toolArgs.working_directory && !toolArgs.working_dir) {
+          const currentWorkspace = workspaceManager.getCurrentWorkspace();
+          toolArgs.working_directory = currentWorkspace;
+        }
+
         const tool = getToolInstance(name);
         if (tool) {
-          return await tool.handle(args);
+          return await tool.handle(toolArgs);
         } else {
           throw new Error(`未知工具: ${name}`);
         }

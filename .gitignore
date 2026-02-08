@@ -88,15 +88,14 @@ workspace/
 
 # Local data
 .local_file_operations/
+.axlocalop/
 .mcp_data/
 mcp_data/
 temps/
 .temps/
 
 # Test
-test/
 tests/
-*.test.js
 *.spec.js
 jest-results/
 test-results/
