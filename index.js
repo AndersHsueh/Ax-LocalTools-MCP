@@ -11,9 +11,8 @@
 
 // 重构：集中注册
 const { instances, getToolInstance } = require('./tools/registry.js');
-
-// 导入工作目录管理器
-const workspaceManager = require('./tools/workspaceManager.js');
+// 使用注册表中的 workspace_manager 实例，确保工具和服务器共享同一工作区状态
+const workspaceManager = instances.workspace_manager;
 
 // 处理命令行参数
 if (process.argv.includes('--help')) {
