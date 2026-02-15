@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const EnvironmentMemoryTool = require('./environmentMemory.js');
+const { getEnvironmentValue, updateEnvironment } = require('./environmentMemory.js');
 
 // 单例实例
 let instance = null;
@@ -65,7 +65,7 @@ class WorkspaceManager {
         }
         
         // 获取默认工作目录
-        const defaultWorkspace = EnvironmentMemoryTool.getEnvironmentValue('DEFAULT_WORKSPACE');
+        const defaultWorkspace = getEnvironmentValue('DEFAULT_WORKSPACE');
         if (defaultWorkspace) {
             return defaultWorkspace;
         }
@@ -83,7 +83,7 @@ class WorkspaceManager {
      */
     setDefaultWorkspace(workspacePath) {
         if (this.validateWorkspace(workspacePath)) {
-            EnvironmentMemoryTool.updateEnvironment('DEFAULT_WORKSPACE', workspacePath, 'Default workspace directory');
+            updateEnvironment('DEFAULT_WORKSPACE', workspacePath, 'Default workspace directory');
             this.logger.log(`[WorkspaceManager] 默认工作目录已设置为: ${workspacePath}`);
             return true;
         }
@@ -137,7 +137,7 @@ class WorkspaceManager {
     getStatus() {
         return {
             tempWorkspace: this.tempWorkspace,
-            defaultWorkspace: EnvironmentMemoryTool.getEnvironmentValue('DEFAULT_WORKSPACE'),
+            defaultWorkspace: getEnvironmentValue('DEFAULT_WORKSPACE'),
             currentWorkspace: this.getCurrentWorkspace()
         };
     }

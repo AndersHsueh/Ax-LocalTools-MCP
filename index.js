@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 安全MCP服务器 - Node.js版本 v2.7.0
+ * 安全MCP服务器 - Node.js版本 v2.7.1
  * 支持文件操作、文件编辑、文件搜索、文件比较、文件哈希、文件权限、文件压缩、文件监控和命令执行
  * 包含安全限制，禁止操作敏感目录
  */
@@ -16,7 +16,7 @@ const workspaceManager = instances.workspace_manager;
 
 // 处理命令行参数
 if (process.argv.includes('--help')) {
-  console.log(`AX Local Operations MCP Server v2.7.0\n`);
+  console.log(`AX Local Operations MCP Server v2.7.1\n`);
   console.log(`Usage: ax-local-operations-mcp [options]\n`);
   console.log(`Options:`);
   console.log(`  --help           显示本帮助信息`);
@@ -29,7 +29,7 @@ if (process.argv.includes('--help')) {
 }
 
 if (process.argv.includes('--version')) {
-  console.log('2.7.0');
+  console.log('2.7.1');
   process.exit(0);
 }
 
@@ -55,7 +55,7 @@ class SecureMCPServer {
     this.server = new Server(
       {
         name: 'ax_local_operations',
-        version: '2.7.0',
+        version: '2.7.1',
       },
       {
         capabilities: {

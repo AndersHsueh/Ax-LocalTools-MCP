@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const WorkspaceManager = require('../tools/workspaceManager');
-const EnvironmentMemoryTool = require('../tools/environmentMemory');
+const { getEnvironmentValue } = require('../tools/environmentMemory');
 
 // 创建测试用的安全验证器（模拟）
 class MockSecurityValidator {
@@ -93,7 +93,7 @@ async function runAllTests() {
     // 测试4: 获取默认工作目录（临时目录清除后）
     runTest('获取默认工作目录', () => {
         workspaceManager.clearTempWorkspace();
-        const defaultWorkspace = EnvironmentMemoryTool.getEnvironmentValue('DEFAULT_WORKSPACE');
+        const defaultWorkspace = getEnvironmentValue('DEFAULT_WORKSPACE');
         const currentWorkspace = workspaceManager.getCurrentWorkspace();
         assert.strictEqual(currentWorkspace, defaultWorkspace);
     });
