@@ -11,7 +11,7 @@ const readline = require('readline');
 const os = require('os');
 
 // 导入环境记忆模块
-const EnvironmentMemoryTool = require('../tools/environmentMemory.js');
+const { updateEnvironment } = require('../tools/environmentMemory.js');
 
 // 创建readline接口
 const rl = readline.createInterface({
@@ -125,7 +125,7 @@ function validateAndCreateWorkspace(workspacePath) {
 // 保存配置
 function saveConfiguration(workspacePath) {
     try {
-        EnvironmentMemoryTool.updateEnvironment('DEFAULT_WORKSPACE', workspacePath, 'Default workspace directory');
+        updateEnvironment('DEFAULT_WORKSPACE', workspacePath, 'Default workspace directory');
         console.log(`\n✓ 已将默认工作目录设置为：${workspacePath}`);
         return true;
     } catch (error) {
