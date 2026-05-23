@@ -1,66 +1,63 @@
 /**
  * 安全验证模块
- * 提供路径和命令的安全检查功能
+ * Agent 全控授权模式：
+ * - 支持任意绝对路径（不限于 home 目录）
+ * - 拒绝以 . 开头的隐藏目录组件（dotfile 本身允许，如 .env/.gitignore）
+ * - 提供了工作目录时，验证路径在其范围内
  */
 
 const path = require('path');
 const os = require('os');
-const { resolveUserPath, assertInHome } = require('../lib/pathUtils');
+const { resolveUserPath } = require('../lib/pathUtils');
 const { ERR } = require('../errors');
+
+// 检查路径的目录部分是否含隐藏段（如 /home/user/.secret/file）
+function containsHiddenDirectory(absPath) {
+  const parts = absPath.split(path.sep);
+  return parts.slice(0, -1).some(
+    p => p && p.startsWith('.') && p !== '.' && p !== '..'
+  );
+}
+
+// 规范化路径用于比较（Windows 忽略大小写）
+const norm = process.platform === 'win32'
+  ? p => p.toLowerCase()
+  : p => p;
 
 class SecurityValidator {
   constructor() {
     this.userHome = os.homedir();
   }
 
-  isPathAllowed(filePath, workingDirectory = null) {
+  // 返回已解析的绝对路径，或在不允许时返回 null
+  _resolve(filePath, workingDirectory) {
     try {
-      // 如果提供了工作目录，验证文件路径是否在工作目录内
+      const resolved = path.resolve(resolveUserPath(filePath, { workingDir: workingDirectory || undefined }));
+      if (containsHiddenDirectory(resolved)) return null;
       if (workingDirectory) {
-        const abs = resolveUserPath(filePath, { workingDir: workingDirectory });
-        // 验证路径是否在指定的工作目录内
-        const resolvedWorkingDir = path.resolve(workingDirectory);
-        const absPath = path.resolve(abs);
-        if (!absPath.startsWith(resolvedWorkingDir + path.sep) && absPath !== resolvedWorkingDir) {
-          return false;
-        }
-        return true;
-      } else {
-        // 如果没有提供工作目录，则检查路径是否在用户家目录内
-        const abs = resolveUserPath(filePath);
-        assertInHome(abs);
-        return true;
+        const wd = path.resolve(workingDirectory);
+        if (norm(resolved) !== norm(wd) && !norm(resolved).startsWith(norm(wd) + path.sep)) return null;
       }
-    } catch (e) {
-      return false;
+      return resolved;
+    } catch {
+      return null;
     }
+  }
+
+  isPathAllowed(filePath, workingDirectory = null) {
+    return this._resolve(filePath, workingDirectory) !== null;
   }
 
   resolveAndAssert(filePath, workingDirectory = null) {
-    // 如果提供了工作目录，验证文件路径是否在工作目录内
-    if (workingDirectory) {
-      const abs = resolveUserPath(filePath, { workingDir: workingDirectory });
-      const resolvedWorkingDir = path.resolve(workingDirectory);
-      const absPath = path.resolve(abs);
-      if (!absPath.startsWith(resolvedWorkingDir + path.sep) && absPath !== resolvedWorkingDir) {
-        throw ERR.PATH_DENIED(filePath);
-      }
-      return abs;
-    } else {
-      // 如果没有提供工作目录，则使用家目录限制
-      const abs = resolveUserPath(filePath);
-      try {
-        return assertInHome(abs);
-      } catch (e) {
-        throw ERR.PATH_DENIED(filePath);
-      }
-    }
+    const resolved = this._resolve(filePath, workingDirectory);
+    if (!resolved) throw ERR.PATH_DENIED(filePath);
+    return resolved;
   }
 
+  /** @deprecated 请使用 commandPolicy.evaluate() */
   isDangerousCommand(command) {
-    // 兼容旧接口（将被 commandPolicy 取代）
-    const legacy = ['rm -rf', 'sudo', 'su', 'chmod 777', 'chown', 'passwd'];
-    return legacy.some(t => command.toLowerCase().includes(t));
+    return ['rm -rf', 'sudo', 'su', 'chmod 777', 'chown', 'passwd']
+      .some(t => command.toLowerCase().includes(t));
   }
 }
 

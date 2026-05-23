@@ -1,53 +1,118 @@
-# AX本地操作 MCP 服务器 v2.7.0
+# AX本地操作 MCP 服务器
 
-一个功能强大的 MCP (Model Context Protocol) 服务器，名为 `ax_local_operations`，为大模型应用提供安全的本地文件操作、行级编辑、文件搜索、文件比较、文件哈希、文件权限、文件压缩、文件监控、命令执行和任务管理功能。
+> 版本 2.8.0 · Node.js ≥ 18 · Windows / macOS / Linux
 
-## 作者本人推荐,特点: 
-  - 使用这个ax_local_operations，你可以在任何接受MCP的对话应用里, 把它变成可以操作电脑的助手. 而不仅仅是一个对话聊天工具. 
-  - 最佳实践: 使用 `Qwen` 应用, 加入 ax_local_operations 这个MCP之后,  qwen 可以接受用户的指示, 从而完成一些诸如编码, 部署环境, 检测设备硬件等等的实际工作. 而不是仅仅聊天.  还可以使用 `Jan`,`lmStudio` 这些应用都可以加入ax_local_operations 这个MCP之后，从而实现更智能的助手功能。 
-  - 对比其它MCP, 比如其它的本地文件MCP, 专注于文件操作. 但没有命令执行工具，所以这个MCP适合做对话应用，而不是命令行工具。 
+为大模型应用提供安全的本地操作能力：文件读写、行级编辑、搜索、比较、哈希、权限、压缩、监控、命令执行和任务管理。
 
-## 使用注意,
-  - 安装时会自动提示设置默认工作目录，也可以使用 `--default-dir` 参数指定
-  - 在对话中可以使用：`当前的工作目录是：/User/research/work` 来临时指定工作目录
-  - 使用 `workspace_manager` 工具可以管理工作目录设置
+---
 
-## 🌐 平台兼容性
+## 快速开始
 
-### 支持的平台
-| 平台 | 支持状态 | 说明 |
-|------|---------|------|
-| macOS | ✅ 完全支持 | 所有工具均可正常使用 |
-| Linux | ✅ 完全支持 | 所有工具均可正常使用（包括 sudo_config） |
-| Windows | ✅ 基本支持 | 11个工具可用，2个工具部分支持 |
+### npx（推荐，无需安装）
 
-### 工具平台支持详情
+```json
+{
+  "mcpServers": {
+    "ax_local_operations": {
+      "command": "npx",
+      "args": ["-y", "ax-local-operations-mcp"]
+    }
+  }
+}
+```
 
-#### 完全跨平台支持（Windows/macOS/Linux）
-以下工具在所有平台上均可正常使用：
-- ✅ file_operation - 文件操作
-- ✅ file_edit - 文件编辑
-- ✅ file_search - 文件搜索
-- ✅ file_compare - 文件比较
-- ✅ file_hash - 文件哈希
-- ✅ file_permissions - 文件权限管理（使用系统对应的命令：attrib/icacls 或 chmod）
-- ✅ file_watch - 文件监控
-- ✅ execute_command - 命令执行
-- ✅ task_manager - 任务管理
-- ✅ time_tool - 时间工具
-- ✅ environment_memory - 环境记忆
-- ✅ workspace_manager - 工作目录管理
+### 本地安装
 
-#### 平台限制
-**file_archive** - 文件压缩工具
-- macOS/Linux: ✅ 完全支持（使用系统命令 zip/unzip/tar/gzip）
-- Windows: ⚠️ 需要安装额外工具
-  - 需要安装 Git Bash、WSL 或第三方压缩工具
-  - 或手动安装 zip/unzip/tar/gzip 命令行工具
+```bash
+npm install -g ax-local-operations-mcp
+```
 
-**sudo_config** - Sudo配置工具
-- Linux: ✅ 完全支持
-- macOS: ❌ 不支持（不适用）
-- Windows: ❌ 不支持（不适用）
+```json
+{
+  "mcpServers": {
+    "ax_local_operations": {
+      "command": "ax-local-operations-mcp"
+    }
+  }
+}
+```
 
-### Windows 用户注意事项
+安装时会自动运行交互式向导设置默认工作目录。  
+也可在对话中临时指定：`当前的工作目录是：/path/to/project`
+
+---
+
+## 工具列表
+
+| 工具名 | 说明 | 平台 |
+|--------|------|------|
+| `file_operation` | 文件读写、列出、创建目录、删除 | 全平台 |
+| `file_edit` | 行级编辑（插入、删除、替换、追加） | 全平台 |
+| `file_search` | 正则/关键词内容搜索 | 全平台 |
+| `file_compare` | 文件差异对比 | 全平台 |
+| `file_hash` | MD5/SHA256 等哈希计算 | 全平台 |
+| `file_permissions` | 权限读写（chmod / attrib / icacls） | 全平台 |
+| `file_archive` | 压缩/解压（zip/tar/gzip） | 全平台¹ |
+| `file_watch` | 文件/目录变更监控 | 全平台 |
+| `execute_command` | 执行系统命令（pwsh / bash） | 全平台 |
+| `task_manager` | 任务创建与跟踪 | 全平台 |
+| `time_tool` | 时间查询与格式化 | 全平台 |
+| `environment_memory` | 持久化环境信息存储 | 全平台 |
+| `workspace_manager` | 工作目录管理 | 全平台 |
+| `sudo_config` | sudo 无密码配置助手 | Linux 专用 |
+
+> ¹ Windows 需要 `zip`/`unzip`/`tar`/`gzip` 在 PATH 中（Git Bash、WSL 或手动安装）。
+
+---
+
+## 安全策略
+
+- **路径安全**：`securityValidator.resolveAndAssert()` 阻止路径逃逸；拒绝路径中的隐藏目录组件（如 `../.hidden/file`），但允许 `.env` 等点文件。
+- **命令安全**：仅拦截不可恢复的极危险命令（如 `format C:`、`rm -rf /`）；Agent 全控授权模式下无警告摩擦。
+- **工作目录注入**：`index.js` 会在每次工具调用前自动注入 `working_directory`，工具无需手动传入。
+
+---
+
+## 工作目录管理
+
+```
+# 对话中临时切换
+当前的工作目录是：/path/to/project
+
+# 通过工具持久化
+workspace_manager: set /path/to/project
+workspace_manager: get
+```
+
+---
+
+## 开发
+
+```bash
+npm start                  # 启动 MCP 服务器
+node test/runTests.js      # 运行完整测试套件（报告写入 test/reports/）
+node test/integrationTest.js  # 注册表与平台集成测试
+npm run release            # semantic-release（需 Conventional Commits）
+```
+
+### 添加新工具
+
+1. 创建 `tools/newTool.js`，导出带 `constructor(securityValidator)` 和 `async handle(args)` 的类。
+2. 在 `tools/registry.js` 中导入、实例化、添加描述符。
+3. 详见 `tools/tools_dev_guide.md`。
+
+---
+
+## 平台兼容性
+
+| 平台 | 支持状态 |
+|------|---------|
+| Windows 10/11 | ✅ 完全支持（PowerShell 7 / pwsh） |
+| macOS | ✅ 完全支持 |
+| Linux | ✅ 完全支持（含 sudo_config） |
+
+---
+
+## 许可证
+
+MIT

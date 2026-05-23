@@ -6,11 +6,12 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const os = require('os');
 
 class TaskManagerTool {
   constructor(securityValidator) {
     this.securityValidator = securityValidator;
-    this.tempsDir = path.join(__dirname, '..', 'temps');
+    this.tempsDir = path.join(os.homedir(), '.local_file_operations', 'tasks');
   }
 
   async handle(args) {

@@ -22,13 +22,17 @@ class FileSearchTool {
       max_depth = 8,
       timeout_ms = 5000,
       ignore = [],
-      output_format = 'text'
+      output_format = 'text',
+      working_directory,
+      working_dir
     } = args;
     const targetPath = search_path || root_path;
     if (!targetPath) throw new Error('缺少搜索路径参数: 需要 search_path 或 root_path');
 
+    const workDir = working_directory || working_dir;
+
     // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(targetPath)) {
+    if (!this.securityValidator.isPathAllowed(targetPath, workDir)) {
       throw new Error(`不允许搜索路径: ${targetPath}`);
     }
 
@@ -88,7 +92,7 @@ class FileSearchTool {
 
   async searchInDirectory(dirPath, pattern, fileTypes, caseSensitive, maxResults, depth, maxDepth, ignoreList, controller) {
     const results = [];
-    const regex = new RegExp(pattern, caseSensitive ? 'g' : 'gi');
+    const regex = new RegExp(pattern, caseSensitive ? '' : 'i');
 
     try {
       if (controller.cancelled) return results;

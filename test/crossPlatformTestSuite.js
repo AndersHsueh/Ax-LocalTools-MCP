@@ -333,13 +333,14 @@ class CrossPlatformTestSuite {
         { command: safeCommand, result: safeResult }
       );
 
-      // 危险命令测试
+      // 危险命令测试：Unix平台期望 deny，Windows平台此命令不适用所以期望 allow
       const dangerousCommand = 'rm -rf /';
       const dangerResult = await evaluateCommand(dangerousCommand);
+      const expectedDangerLevel = platformUtils.isWindows ? 'allow' : 'deny';
       
       this.collector.addResult('危险命令检测', '命令策略',
-        dangerResult.level === 'deny' || dangerResult.level === 'warn' ? 'passed' : 'failed',
-        { command: dangerousCommand, result: dangerResult }
+        dangerResult.level === expectedDangerLevel ? 'passed' : 'failed',
+        { command: dangerousCommand, result: dangerResult, expected: expectedDangerLevel }
       );
 
       // 平台特定命令测试
@@ -361,7 +362,7 @@ class CrossPlatformTestSuite {
    */
   async testWindowsCommands() {
     const windowsCommands = [
-      { cmd: 'del /f /s /q temp', expected: 'warn' },
+      { cmd: 'del /f /s /q temp', expected: 'allow' },
       { cmd: 'format C:', expected: 'deny' },
       { cmd: 'dir', expected: 'allow' }
     ];

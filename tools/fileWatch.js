@@ -261,10 +261,14 @@ class FileWatchTool {
       duration = 30,
       output_format = 'text',
       recursive = true,
-      max_depth = 10
+      max_depth = 10,
+      working_directory,
+      working_dir
     } = args;
 
-    if (!this.securityValidator.isPathAllowed(watchPath)) {
+    const workDir = working_directory || working_dir;
+
+    if (!this.securityValidator.isPathAllowed(watchPath, workDir)) {
       throw new Error(`不允许监控路径: ${watchPath}`);
     }
 
@@ -334,13 +338,16 @@ class FileWatchTool {
           }
         });
         
-        watcher.on('error', (error) => {
-          console.error('监控错误:', error);
+        watcher.on('error', (_error) => {
+          // 静默处理监控错误，不输出到 MCP stdio
         });
         
         this.activeWatchers.set(watchPath, watcher);
         await watcher.start();
         
+        // duration=0 表示持续监控，不自动停止
+        if (options.duration === 0) return;
+
         const timeout = setTimeout(() => {
           const stats = watcher.getStats();
           watcher.stop();

@@ -12,13 +12,16 @@ class FileCompareTool {
   }
 
   async handle(args) {
-    const { file1, file2, source_path, target_path, output_format = 'text' } = args;
+    const { file1, file2, source_path, target_path, output_format = 'text',
+            working_directory, working_dir } = args;
     const left = file1 || source_path;
     const right = file2 || target_path;
     if (!left || !right) throw new Error('缺少文件参数: 需要 file1/file2 或 source_path/target_path');
 
+    const workDir = working_directory || working_dir;
+
     // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(left) || !this.securityValidator.isPathAllowed(right)) {
+    if (!this.securityValidator.isPathAllowed(left, workDir) || !this.securityValidator.isPathAllowed(right, workDir)) {
       throw new Error('不允许比较指定路径的文件');
     }
 

@@ -219,7 +219,7 @@ class FileOperationTool {
       const fullPath = this.securityValidator.resolveAndAssert(filePath, workingDirectory);
       const stats = await fs.stat(fullPath);
       if (stats.isDirectory()) {
-        await fs.rmdir(fullPath, { recursive: true });
+        await fs.rm(fullPath, { recursive: true, force: true });
         return buildOutput(outputFormat, `成功删除目录: ${fullPath}`, {
           action: 'delete',
           path: fullPath,

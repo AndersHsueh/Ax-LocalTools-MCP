@@ -99,6 +99,7 @@ tests/
 *.spec.js
 jest-results/
 test-results/
+test/reports/
 coverage-reports/
 
 # Output

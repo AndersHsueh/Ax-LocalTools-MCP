@@ -67,7 +67,7 @@ class EnvironmentMemoryAdapter {
             status: 'ok', 
             operation: 'update', 
             key, 
-            value: value ? '[HIDDEN]' : undefined, 
+            value, 
             description: description || '' 
           };
           

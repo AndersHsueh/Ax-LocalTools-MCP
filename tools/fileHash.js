@@ -13,14 +13,17 @@ class FileHashTool {
   }
 
   async handle(args) {
-  const { path: filePath, file_path, algorithm = 'md5', output_format = 'text' } = args;
+  const { path: filePath, file_path, algorithm = 'md5', output_format = 'text',
+          working_directory, working_dir } = args;
     const target = filePath || file_path;
     if (!target) {
       throw new Error('缺少 path 或 file_path 参数');
     }
 
+    const workDir = working_directory || working_dir;
+
     // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(target)) {
+    if (!this.securityValidator.isPathAllowed(target, workDir)) {
       throw new Error(`不允许操作路径: ${target}`);
     }
 
