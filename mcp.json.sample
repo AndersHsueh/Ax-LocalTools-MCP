@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ax_local_operations": {
+      "command": "C:/nvm4w/nodejs/node.exe",
+      "args": ["D:/projects/Ax-LocalTools-MCP/index.js"]
+    }
+  }
+}

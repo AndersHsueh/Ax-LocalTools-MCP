@@ -2,32 +2,23 @@
 
 ## 1. 安装时默认工作目录设置
 
-当你全局安装 `ax_local_operations` 时，系统会自动触发默认工作目录配置流程：
+全局安装时会自动创建默认工作目录 `~/axlocalop/workspace`：
 
 ```bash
-npm install -g ax_local_operations
+npm install -g ax-local-operations-mcp
 ```
 
-安装过程中，你会看到以下引导信息：
+安装脚本是**非交互**的：npm 安装阶段 stdin 通常不是 TTY，交互式向导会立即读到 EOF 并让安装以 ELIFECYCLE 失败。因此它只做幂等的目录预创建，不会阻塞安装，也不会覆盖已有配置。
 
-```
-*** ax-local-operation 是一个增强Cowork的MCP
-*** 需要选择一个默认的工作目录
-*** 也可以在对话中使用：`当前的工作目录是： xxxx` 来临时指定。
+需要自行选择目录时，显式运行交互式向导：
 
-请选择默认工作目录：
-
-[ ] 1. C:\Users\username\Documents\MyObsidianNotes
-[ ] 2. c:/users/a/a1note
-[ ] 3. d:/users/b/b1note
-[ ] 4. c:/user/projects/temp/note1
-[v] 5. 使用 C:\Users\username\.axlocalop\workspace
-[ ] 6. 输入一个默认的工作目录
-
-使用上下方向键选择，按Enter键确认
+```bash
+npm run setup:workspace
 ```
 
-系统会自动检测可能的Obsidian笔记仓库路径作为选项，并提供默认选项和自定义输入选项。
+向导会列出检测到的 Obsidian 笔记库与默认路径供选择，并把结果写入环境配置。
+
+> 默认目录位于**非隐藏**目录：路径校验会拒绝任何隐藏目录组件，旧版的 `~/.axlocalop/workspace` 会导致其下所有相对路径调用被拒。
 
 ## 2. 命令行参数修改默认工作目录
 
@@ -41,13 +32,21 @@ ax_local_operations --default-dir 'c:/user/a/note1'
 
 ## 3. 运行时临时指定工作目录
 
-在与MCP的对话中，你可以使用以下命令临时切换工作目录：
+使用 `workspace_manager` 工具切换：
 
-```
-当前工作目录是：C:\Users\username\Documents\Projects
+```json
+{
+  "name": "workspace_manager",
+  "arguments": {
+    "operation": "set_temp",
+    "workspace_path": "C:\\Users\\username\\Documents\\Projects"
+  }
+}
 ```
 
-临时指定的工作目录优先级高于默认工作目录设置，仅在当前会话内有效。
+临时工作目录优先级高于默认工作目录，可用 `clear_temp` 清除。
+
+> 旧版本曾支持在任意参数里写「当前工作目录是：xxx」来切换，但该实现会**吞掉整个工具调用**（例如写入内容里出现这串字就静默不写），已被移除。参数值现在一律按数据处理，不再被当作指令解析。
 
 ## 4. 使用工作目录管理工具
 

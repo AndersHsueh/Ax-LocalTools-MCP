@@ -77,13 +77,18 @@ Config:
 "args": ["-y", "ax-local-operations-mcp", "--default-dir", "/path/to/project"]
 ```
 
-### Set working directory at runtime (without using workspace_manager tool)
+### Set working directory at runtime
 
-Pass any string containing the pattern `当前的工作目录是：<path>` in any argument value. The server intercepts this and sets the temp workspace, then returns without calling the tool. Example:
+Use the `workspace_manager` tool explicitly:
 
 ```json
-{ "command": "当前的工作目录是：/home/user/project" }
+{ "name": "workspace_manager", "arguments": { "operation": "set_temp", "workspace_path": "/home/user/project" } }
 ```
+
+Argument values are always treated as data, never as commands. The old magic-string
+interception (`当前的工作目录是：<path>`) was removed because it silently swallowed
+entire tool calls — e.g. writing a file whose content contained that phrase would
+not create the file at all.
 
 ---
 

@@ -37,8 +37,9 @@ npm install -g ax-local-operations-mcp
 }
 ```
 
-安装时会自动运行交互式向导设置默认工作目录。  
-也可在对话中临时指定：`当前的工作目录是：/path/to/project`
+安装脚本会自动创建默认工作目录 `~/axlocalop/workspace`（非交互，不会阻塞安装）。
+如需自行选择目录，运行 `npm run setup:workspace` 启动交互式向导；
+也可在单次调用中通过 `working_directory` 参数指定，或用 `workspace_manager` 工具切换。
 
 ---
 
@@ -67,31 +68,37 @@ npm install -g ax-local-operations-mcp
 
 ## 安全策略
 
-- **路径安全**：`securityValidator.resolveAndAssert()` 阻止路径逃逸；拒绝路径中的隐藏目录组件（如 `../.hidden/file`），但允许 `.env` 等点文件。
-- **命令安全**：仅拦截不可恢复的极危险命令（如 `format C:`、`rm -rf /`）；Agent 全控授权模式下无警告摩擦。
-- **工作目录注入**：`index.js` 会在每次工具调用前自动注入 `working_directory`，工具无需手动传入。
+- **路径安全**：`securityValidator.resolveAndAssert()` 阻止相对路径逃逸出工作目录；拒绝路径中的隐藏目录组件（如 `../.hidden/file`），但允许 `.env` 等点文件。
+- **命令安全**：仅拦截不可恢复的极危险命令（如 `format C:`、`rm -rf /`）；Agent 全控授权模式下无警告摩擦。所有外部命令（`sudo`、`icacls`、`attrib`、`tar` 等）统一用参数数组调用，不拼接 shell 字符串；sudoers 配置名、用户名、命令列表与 ACL 用户名/权限串均有白名单校验。
+- **工作目录注入**：分发层会在未显式传入时自动注入 `working_directory`，作为**相对路径**的解析基准；显式绝对路径不受该目录限制（仍受隐藏目录规则约束）。
+- **输出合规**：所有工具只返回 MCP 合法的 `text` 内容块；JSON 以文本承载，机器可读数据放在 `structuredContent`。声明了 `outputSchema` 的工具在成功时必定返回 `structuredContent`。
 
 ---
 
 ## 工作目录管理
 
-```
-# 对话中临时切换
-当前的工作目录是：/path/to/project
+通过 `workspace_manager` 工具切换（**参数中的任意文本都不会被当作指令解析**）：
 
-# 通过工具持久化
-workspace_manager: set /path/to/project
-workspace_manager: get
+```json
+{ "name": "workspace_manager", "arguments": { "operation": "set_temp", "workspace_path": "/path/to/project" } }
+{ "name": "workspace_manager", "arguments": { "operation": "status" } }
 ```
+
+也可对单次调用传 `working_directory`，或用 `--default-dir /path/to/project` 设置默认工作目录。
+详见 [WORKSPACE_MANAGEMENT.md](WORKSPACE_MANAGEMENT.md)。
 
 ---
 
 ## 开发
 
 ```bash
-npm start                  # 启动 MCP 服务器
-node test/runTests.js      # 运行完整测试套件（报告写入 test/reports/）
-node test/integrationTest.js  # 注册表与平台集成测试
+npm install                # 安装依赖
+npm start                  # 启动 MCP 服务器（stdio）
+npm test                   # e2e + 集成 + 真实 stdio 冒烟测试
+npm run test:e2e           # 仅端到端行为测试
+npm run test:stdio         # 仅真实 MCP 客户端握手测试
+node test/runTests.js      # 完整测试套件（报告写入 test/reports/）
+npm run setup:workspace    # 交互式选择默认工作目录
 npm run release            # semantic-release（需 Conventional Commits）
 ```
 
