@@ -99,8 +99,10 @@ npm run test:e2e           # 仅端到端行为测试
 npm run test:stdio         # 仅真实 MCP 客户端握手测试
 node test/runTests.js      # 完整测试套件（报告写入 test/reports/）
 npm run setup:workspace    # 交互式选择默认工作目录
-npm run release            # semantic-release（需 Conventional Commits）
+npm run release            # 本地手动跑 semantic-release（需有效 npm 凭据 + Conventional Commits）
 ```
+
+> CI 自动发布目前**默认关闭**：仓库未设置 `ENABLE_NPM_RELEASE=true`，push 到 `main` 只会产生跳过的 run，不会发布。现有 `NPM_TOKEN` 已失效（`npm whoami` 返回 401），恢复发版需先更新 npm 凭据或改用 OIDC trusted publishing，再在仓库 Variables 中设置该开关；详见 `.github/workflows/release.yml`。
 
 ### 添加新工具
 

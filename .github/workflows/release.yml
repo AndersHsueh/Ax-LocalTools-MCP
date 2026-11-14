@@ -15,7 +15,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    # 自动发布默认暂停：npm 凭据失效时避免每次 push 都产生失败的 run。
+    # 恢复步骤：1) 配置有效的 npm 凭据（更新 NPM_TOKEN secret，或改用 OIDC trusted publishing）
+    #          2) 在仓库 Settings → Secrets and variables → Actions → Variables
+    #             新增 ENABLE_NPM_RELEASE = true
+    if: "vars.ENABLE_NPM_RELEASE == 'true' && !contains(github.event.head_commit.message, 'skip ci')"
     environment: npm-publish
     steps:
       - uses: actions/checkout@v4

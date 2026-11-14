@@ -139,7 +139,7 @@ if (error.code === 'E_PATH_DENIED') throw error; // re-throw, don't wrap
 
 - **`file_archive`** requires `zip`/`unzip`/`tar`/`gzip` binaries in PATH on Windows (Git Bash, WSL, or manual install). No native fallback.
 - **`postinstall`** (`bin/setup-workspace.js`) runs on every `npm install` and prompts interactively. In CI/non-interactive environments this may hang.
-- **Release**: CI uses `semantic-release` on push to `main`/`develop`/`alpha`/`beta`. Commit messages must follow Conventional Commits. Add `skip ci` to commit message to skip release.
+- **Release**: Automatic publishing is **paused by default**. `release.yml` gates the job on the repository variable `ENABLE_NPM_RELEASE == 'true'`; without it, pushes to `main`/`develop`/`alpha`/`beta` produce a skipped (not failed) run. To resume: first configure a working npm credential (the existing `NPM_TOKEN` secret is an expired classic token — `npm whoami` returns 401; regenerate a granular Automation token or switch to npm OIDC trusted publishing), then set `ENABLE_NPM_RELEASE=true` in repo Variables. `NPM_TOKEN` / `NODE_AUTH_TOKEN` already reference that secret. Conventional Commits are still required; `skip ci` skips a single release.
 - **No build step**: pure CommonJS, no transpile, no bundling. `npm start` runs directly.
 - Test reports are written to `test/reports/` with platform in filename (`win32`, `linux`, `darwin`). Not committed.
 - **`taskManager`** stores data at `~/.local_file_operations/tasks/` — survives `npm update`. Old data in `temps/` is not migrated automatically.
