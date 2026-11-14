@@ -115,3 +115,6 @@ pnpm-lock.yaml
 .grunt
 .lock-wscript
 bower_components
+
+# Local agent workspace data (machine-specific, never published)
+.workbuddy/

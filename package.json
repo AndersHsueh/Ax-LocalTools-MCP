@@ -9,6 +9,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
+    "test": "node test/e2eTest.js && node test/test-workspace.js && node test/integrationTest.js && node test/stdioTest.js",
+    "test:e2e": "node test/e2eTest.js",
+    "test:stdio": "node test/stdioTest.js",
+    "setup:workspace": "node ./bin/setup-workspace.js --interactive",
     "release": "semantic-release",
     "postinstall": "node ./bin/setup-workspace.js"
   },
@@ -36,6 +40,7 @@
     "index.js",
     "errors.js",
     "responses.js",
+    "bin/",
     "tools/",
     "lib/",
     "README.md",
