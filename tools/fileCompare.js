@@ -5,6 +5,8 @@
 
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const { buildOutput } = require('../lib/output');
+const { ERR } = require('../errors');
 
 class FileCompareTool {
   constructor(securityValidator) {
@@ -14,16 +16,16 @@ class FileCompareTool {
   async handle(args) {
     const { file1, file2, source_path, target_path, output_format = 'text',
             working_directory, working_dir } = args;
-    const left = file1 || source_path;
-    const right = file2 || target_path;
-    if (!left || !right) throw new Error('缺少文件参数: 需要 file1/file2 或 source_path/target_path');
+    const leftRaw = file1 || source_path;
+    const rightRaw = file2 || target_path;
+    if (!leftRaw || !rightRaw) throw ERR.INVALID_ARGS('缺少文件参数: 需要 file1/file2 或 source_path/target_path');
 
     const workDir = working_directory || working_dir;
 
-    // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(left, workDir) || !this.securityValidator.isPathAllowed(right, workDir)) {
-      throw new Error('不允许比较指定路径的文件');
-    }
+    // 必须先解析成绝对路径，再用同一个绝对路径做校验和读取
+    // （否则校验对象与实际操作对象不一致，相对路径会按 process.cwd() 解析）
+    const left = this.securityValidator.resolveAndAssert(leftRaw, workDir);
+    const right = this.securityValidator.resolveAndAssert(rightRaw, workDir);
 
     try {
       const [content1, content2] = await Promise.all([
@@ -34,25 +36,14 @@ class FileCompareTool {
       const comparison = this.compareContents(content1, content2, left, right);
       const stats = this.diffStats(comparison.differences);
       const payload = { ...comparison, diff_stats: stats };
-      
-      if (output_format === 'json') {
-        return { content: [{ type: 'json', json: payload }] };
-      } else if (output_format === 'both') {
-        return { content: [
-          { type: 'text', text: this.formatTextComparison(payload) },
-          { type: 'json', json: payload }
-        ]};
-      }
-      return { content: [{ type: 'text', text: this.formatTextComparison(payload) }] };
+
+      return buildOutput(output_format, this.formatTextComparison(payload), payload);
 
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`文件不存在: ${error.path}`);
-      } else if (error.code === 'EACCES') {
-        throw new Error(`没有权限读取文件: ${error.path}`);
-      } else {
-        throw new Error(`比较文件失败: ${error.message}`);
-      }
+      if (error.code === 'E_PATH_DENIED') throw error;
+      if (error.code === 'ENOENT') throw ERR.NOT_FOUND(error.path || leftRaw);
+      if (error.code === 'EACCES') throw ERR.INVALID_ARGS(`没有权限读取文件: ${error.path}`);
+      throw ERR.INVALID_ARGS(`比较文件失败: ${error.message}`);
     }
   }
 

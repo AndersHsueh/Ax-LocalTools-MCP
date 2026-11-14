@@ -7,11 +7,26 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
+const { buildOutput } = require('../lib/output');
+
+/** 映射成 outputSchema.tasks.items 声明的字段 */
+function toSchemaTask(task) {
+  return {
+    task_id: task.id,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    progress: task.progress
+  };
+}
 
 class TaskManagerTool {
   constructor(securityValidator) {
     this.securityValidator = securityValidator;
-    this.tempsDir = path.join(os.homedir(), '.local_file_operations', 'tasks');
+    // 与 environmentMemory 共用数据目录，测试可用 AXLOCALOP_DATA_DIR 隔离，
+    // 避免测试运行往真实用户目录写任务文件。
+    const dataDir = process.env.AXLOCALOP_DATA_DIR || path.join(os.homedir(), '.local_file_operations');
+    this.tempsDir = path.join(dataDir, 'tasks');
   }
 
   async handle(args) {
@@ -25,28 +40,43 @@ class TaskManagerTool {
       due_date,
       subtasks = [],
       status = 'pending',
-      progress = 0
+      progress = 0,
+      output_format = 'text'
     } = args;
 
     try {
+      let result;
       switch (operation) {
         case 'create':
-          return await this.createTask(model_name, { title, description, priority, due_date, subtasks });
+          result = await this.createTask(model_name, { title, description, priority, due_date, subtasks });
+          break;
         case 'update':
-          return await this.updateTask(model_name, task_id, { title, description, priority, due_date, subtasks, status, progress });
+          result = await this.updateTask(model_name, task_id, { title, description, priority, due_date, subtasks, status, progress });
+          break;
         case 'delete':
-          return await this.deleteTask(model_name, task_id);
+          result = await this.deleteTask(model_name, task_id);
+          break;
         case 'list':
-          return await this.listTasks(model_name, status);
+          result = await this.listTasks(model_name, status);
+          break;
         case 'complete':
-          return await this.completeTask(model_name, task_id);
+          result = await this.completeTask(model_name, task_id);
+          result.structuredContent.operation = 'complete';
+          break;
         case 'get':
-          return await this.getTask(model_name, task_id);
+          result = await this.getTask(model_name, task_id);
+          break;
         case 'clear':
-          return await this.clearAllTasks(model_name);
+          result = await this.clearAllTasks(model_name);
+          break;
         default:
           throw new Error(`不支持的操作类型: ${operation}`);
       }
+
+      const textMsg = (result.content || []).map(b => b.text || '').join('\n');
+      // 该工具声明了 outputSchema，成功路径必须下发 structuredContent，
+      // 否则 SDK 客户端会以 -32600 拒绝调用。
+      return buildOutput(output_format, textMsg, result.structuredContent || { operation });
     } catch (error) {
       throw new Error(`任务管理操作失败: ${error.message}`);
     }
@@ -79,7 +109,8 @@ class TaskManagerTool {
           type: 'text',
           text: `任务创建成功!\n任务ID: ${taskId}\n标题: ${newTask.title}\n优先级: ${newTask.priority}\n状态: ${newTask.status}`
         }
-      ]
+      ],
+      structuredContent: { operation: 'create', created_task_id: taskId, tasks: [toSchemaTask(newTask)] }
     };
   }
 
@@ -113,7 +144,8 @@ class TaskManagerTool {
           type: 'text',
           text: `任务更新成功!\n任务ID: ${taskId}\n标题: ${task.title}\n状态: ${task.status}\n进度: ${task.progress}%`
         }
-      ]
+      ],
+      structuredContent: { operation: 'update', tasks: [toSchemaTask(task)] }
     };
   }
 
@@ -134,7 +166,8 @@ class TaskManagerTool {
           type: 'text',
           text: `任务删除成功!\n已删除任务: ${deletedTask.title} (ID: ${taskId})`
         }
-      ]
+      ],
+      structuredContent: { operation: 'delete', tasks: [] }
     };
   }
 
@@ -153,7 +186,8 @@ class TaskManagerTool {
             type: 'text',
             text: `没有找到任务${statusFilter ? ` (状态: ${statusFilter})` : ''}`
           }
-        ]
+        ],
+        structuredContent: { operation: 'list', tasks: [] }
       };
     }
 
@@ -175,7 +209,8 @@ class TaskManagerTool {
           type: 'text',
           text: `任务列表 (${filteredTasks.length}个任务):\n\n${taskList}`
         }
-      ]
+      ],
+      structuredContent: { operation: 'list', tasks: filteredTasks.map(toSchemaTask) }
     };
   }
 
@@ -216,7 +251,8 @@ ID: ${task.id}
 子任务:
 ${subtasksList}`
         }
-      ]
+      ],
+      structuredContent: { operation: 'get', tasks: [toSchemaTask(task)] }
     };
   }
 
@@ -229,7 +265,8 @@ ${subtasksList}`
           type: 'text',
           text: `已清空所有任务 (模型: ${modelName})`
         }
-      ]
+      ],
+      structuredContent: { operation: 'clear', tasks: [] }
     };
   }
 

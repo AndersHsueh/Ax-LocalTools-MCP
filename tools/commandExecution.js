@@ -6,6 +6,7 @@
 const { spawn, execFile } = require('child_process');
 const { evaluate } = require('../lib/commandPolicy');
 const { ERR } = require('../errors');
+const { buildOutput } = require('../lib/output');
 
 const DEFAULT_STDOUT_MAX = 4000;
 const DEFAULT_STDERR_MAX = 2000;
@@ -64,8 +65,6 @@ function buildResponse(data, fmt, command, cwd, duration_ms, policy) {
     truncated: data.stdoutTruncated || data.stderrTruncated, killed: data.killed || false
   };
 
-  if (fmt === 'json') return { content: [{ type: 'text', text: JSON.stringify(payload) }] };
-
   let text = `命令执行完成:\n命令: ${command}\n`;
   if (cwd) text += `工作目录: ${cwd}\n`;
   text += `耗时: ${duration_ms}ms\n退出码: ${data.exitCode}\n`;
@@ -74,18 +73,27 @@ function buildResponse(data, fmt, command, cwd, duration_ms, policy) {
   if (data.stderr) text += `\nstderr:\n${data.stderr}`;
   if (truncatedParts.length) text += `\n注意: ${truncatedParts.join(', ')}`;
 
-  if (fmt === 'both') return { content: [{ type: 'text', text }, { type: 'text', text: JSON.stringify(payload) }] };
-  return { content: [{ type: 'text', text }] };
+  // 该工具声明了 outputSchema：成功路径必须返回 structuredContent，
+  // 否则 SDK 客户端会以 -32600 拒绝整个调用。
+  return buildOutput(fmt, text, payload);
 }
 
 function fmtResponse(fmt, text, data, isError = false) {
-  const r = fmt === 'json'
-    ? { content: [{ type: 'text', text: JSON.stringify(data) }] }
-    : fmt === 'both'
-      ? { content: [{ type: 'text', text }, { type: 'text', text: JSON.stringify(data) }] }
-      : { content: [{ type: 'text', text }] };
-  if (isError) r.isError = true;
-  return r;
+  if (isError) {
+    // SDK 对 isError 结果不要求 structuredContent，且错误 payload 里的 null
+    // 字段与 outputSchema 类型不符，这里不下发结构化数据。
+    const r = buildOutput(fmt, text, null);
+    r.isError = true;
+    return r;
+  }
+  // need_confirm 等非错误路径同样必须带 structuredContent；先把 null 字段
+  // 规范化成 outputSchema 声明的类型（cwd: string / exit_code: number）。
+  const payload = {
+    ...data,
+    cwd: typeof data.cwd === 'string' ? data.cwd : '',
+    exit_code: typeof data.exit_code === 'number' ? data.exit_code : -1
+  };
+  return buildOutput(fmt, text, payload);
 }
 
 class CommandExecutionTool {

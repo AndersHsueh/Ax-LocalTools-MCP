@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 
 /**
- * 安全MCP服务器 - Node.js版本 v2.7.0
+ * 安全 MCP 服务器
  * 支持文件操作、文件编辑、文件搜索、文件比较、文件哈希、文件权限、文件压缩、文件监控和命令执行
- * 包含安全限制，禁止操作敏感目录
+ *
+ * 架构说明：
+ *   - tools/registry.js 负责工具实例与描述符注册
+ *   - lib/dispatcher.js 负责单次工具调用的分发（可独立测试，无需 stdio）
+ *   - 本文件只负责 CLI 参数处理与 MCP stdio 传输装配
  */
 
 // 注意：@modelcontextprotocol/sdk 是 ESM-only，需使用动态 import 以兼容 CommonJS
 // 我们在启动阶段动态加载并注入依赖，避免 ERR_REQUIRE_ESM
 
-// 重构：集中注册
 const { instances, getToolInstance } = require('./tools/registry.js');
+const { dispatch } = require('./lib/dispatcher.js');
+const { version } = require('./package.json');
 
 // 导入工作目录管理器实例
 const workspaceManager = instances.workspace_manager;
 
 // 处理命令行参数
 if (process.argv.includes('--help')) {
-  console.log(`AX Local Operations MCP Server v2.7.0\n`);
+  console.log(`AX Local Operations MCP Server v${version}\n`);
   console.log(`Usage: ax-local-operations-mcp [options]\n`);
   console.log(`Options:`);
   console.log(`  --help           显示本帮助信息`);
@@ -30,7 +35,7 @@ if (process.argv.includes('--help')) {
 }
 
 if (process.argv.includes('--version')) {
-  console.log('2.7.0');
+  console.log(version);
   process.exit(0);
 }
 
@@ -42,8 +47,9 @@ if (defaultDirIndex !== -1 && defaultDirIndex + 1 < process.argv.length) {
     console.log(`默认工作目录已设置为: ${defaultDir}`);
   } else {
     console.error(`设置默认工作目录失败: ${defaultDir}`);
+    process.exitCode = 1;
   }
-  process.exit(0);
+  process.exit();
 }
 
 class SecureMCPServer {
@@ -56,7 +62,7 @@ class SecureMCPServer {
     this.server = new Server(
       {
         name: 'ax_local_operations',
-        version: '2.7.0',
+        version,
       },
       {
         capabilities: {
@@ -74,80 +80,10 @@ class SecureMCPServer {
     // 列出可用工具
     this.server.setRequestHandler(this.ListToolsRequestSchema, async () => ({ tools: require('./tools/registry').descriptors }));
 
-    // 处理工具调用
+    // 处理工具调用：具体分发逻辑在 lib/dispatcher.js
     this.server.setRequestHandler(this.CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-
-      try {
-        // 检查所有参数值中是否包含工作目录设置命令
-        let workspacePath = null;
-        
-        // 递归检查参数对象中的所有字符串值
-        function checkForWorkspaceCommand(obj) {
-          if (typeof obj === 'string') {
-            const parsedPath = workspaceManager.parseWorkspaceCommand(obj);
-            if (parsedPath) {
-              workspacePath = parsedPath;
-            }
-          } else if (typeof obj === 'object' && obj !== null) {
-            for (const key in obj) {
-              checkForWorkspaceCommand(obj[key]);
-              if (workspacePath) break;
-            }
-          }
-        }
-        
-        checkForWorkspaceCommand(args);
-        
-        // 如果找到工作目录命令，处理它并返回响应
-        if (workspacePath) {
-          if (workspaceManager.setTempWorkspace(workspacePath)) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `已设置临时工作目录为: ${workspacePath}`
-                }
-              ]
-            };
-          } else {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `设置工作目录失败: ${workspacePath}`
-                }
-              ],
-              isError: true
-            };
-          }
-        }
-
-        // 为工具调用添加工作目录参数（如果未提供）
-        const toolArgs = { ...args };
-        if (!toolArgs.working_directory && !toolArgs.working_dir) {
-          const currentWorkspace = workspaceManager.getCurrentWorkspace();
-          toolArgs.working_directory = currentWorkspace;
-        }
-
-        const tool = getToolInstance(name);
-        if (tool) {
-          return await tool.handle(toolArgs);
-        } else {
-          throw new Error(`未知工具: ${name}`);
-        }
-      } catch (error) {
-        // 结构化错误响应，添加 isError 标记（MCP 规范）
-        return {
-          content: [
-            {
-              type: 'text',
-              text: error.message
-            }
-          ],
-          isError: true
-        };
-      }
+      return dispatch(name, args, { getToolInstance, workspaceManager });
     });
   }
 
@@ -178,3 +114,7 @@ class SecureMCPServer {
     process.exitCode = 1;
   }
 })();
+
+process.on('unhandledRejection', (reason) => {
+  console.error('未处理的 Promise 拒绝:', reason);
+});

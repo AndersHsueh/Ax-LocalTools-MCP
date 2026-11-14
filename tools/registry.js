@@ -440,7 +440,7 @@ const descriptors = [
     '任务管理：创建、更新、完成、列出和清空任务。支持优先级、截止日期、子任务和进度跟踪。\n\n' +
     '示例：创建任务 { "operation": "create", "model_name": "claude", "title": "完成文档", "priority": "high" }\n' +
     '示例：更新进度 { "operation": "update", "model_name": "claude", "task_id": "xxx", "progress": 50 }', {
-    operation: { type: 'string', enum: ['create', 'list', 'update', 'complete', 'clear'], description: DESCS.operation_crud },
+    operation: { type: 'string', enum: ['create', 'list', 'update', 'complete', 'delete', 'get', 'clear'], description: '操作：create(创建)、list(列表)、update(更新)、complete(完成)、delete(删除)、get(详情)、clear(清空)' },
     model_name: { type: 'string', description: DESCS.model_name },
     task_id: { type: 'string', description: DESCS.task_id },
     title: { type: 'string', description: DESCS.title },

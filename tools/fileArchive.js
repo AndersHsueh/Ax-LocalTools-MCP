@@ -10,6 +10,13 @@ const { spawn } = require('child_process');
 const { buildOutput } = require('../lib/output');
 const { ERR } = require('../errors');
 
+// Windows 的 tar.exe 是 bsdtar，会把 "C:\..." 里的盘符当成 "host:path" 远程语法
+// （报错 tar: Cannot connect to C: resolve failed）。因此传给外部命令的路径一律
+// 使用相对 cwd 的形式，并把 cwd 设为目标目录。
+function toPosix(p) {
+  return p.split(path.sep).join('/');
+}
+
 class FileArchiveTool {
   constructor(securityValidator) {
     this.securityValidator = securityValidator;
@@ -68,27 +75,32 @@ class FileArchiveTool {
 
   async compress(sourcePath, destPath, format, outputFormat) {
     const finalDest = destPath || this.generateArchiveName(sourcePath, format);
+    const destDir = path.dirname(finalDest);
+    const destName = path.basename(finalDest);
+    const srcRel = toPosix(path.relative(destDir, sourcePath)) || path.basename(sourcePath);
     let cmd, args;
 
     switch (format.toLowerCase()) {
       case 'zip':
-        cmd = 'zip'; args = ['-r', finalDest, path.basename(sourcePath)];
+        cmd = 'zip'; args = ['-r', destName, srcRel];
         break;
       case 'tar':
-        cmd = 'tar'; args = ['-cf', finalDest, path.basename(sourcePath)];
+        cmd = 'tar'; args = ['-cf', destName, srcRel];
         break;
       case 'gz':
-        cmd = 'gzip'; args = ['-c', sourcePath];
+        cmd = 'gzip'; args = ['-c', srcRel];
         break;
       case 'tar.gz':
-        cmd = 'tar'; args = ['-czf', finalDest, path.basename(sourcePath)];
+        cmd = 'tar'; args = ['-czf', destName, srcRel];
         break;
       default:
         throw ERR.INVALID_ARGS(`不支持的压缩格式: ${format}`);
     }
 
-    const cwd = path.dirname(sourcePath);
-    await this.runProcess(cmd, args, { cwd, pipeTo: format === 'gz' ? finalDest : null });
+    await this.runProcess(cmd, args, {
+      cwd: destDir,
+      pipeTo: format === 'gz' ? path.join(destDir, destName) : null
+    });
     const stats = await fs.stat(finalDest);
     const info = {
       action: 'compress',
@@ -109,15 +121,20 @@ class FileArchiveTool {
     await fs.mkdir(finalDest, { recursive: true });
 
     const src = sourcePath.toLowerCase();
+    // cwd 即解压目标目录，归档路径用相对形式，避免盘符冒号被 bsdtar 误解析
+    const srcRel = toPosix(path.relative(finalDest, sourcePath)) || path.basename(sourcePath);
+    const runInDest = (command, args, extra = {}) =>
+      this.runProcess(command, args, { cwd: finalDest, ...extra });
+
     if (src.endsWith('.zip')) {
-      await this.runProcess('unzip', [sourcePath, '-d', finalDest]);
+      await runInDest('unzip', [srcRel]);
     } else if (src.endsWith('.tar.gz') || src.endsWith('.tgz')) {
-      await this.runProcess('tar', ['-xzf', sourcePath, '-C', finalDest]);
+      await runInDest('tar', ['-xzf', srcRel]);
     } else if (src.endsWith('.tar')) {
-      await this.runProcess('tar', ['-xf', sourcePath, '-C', finalDest]);
+      await runInDest('tar', ['-xf', srcRel]);
     } else if (src.endsWith('.gz')) {
       const out = path.join(finalDest, path.basename(sourcePath, '.gz'));
-      await this.runProcess('gunzip', ['-c', sourcePath], { pipeTo: out });
+      await runInDest('gunzip', ['-c', srcRel], { pipeTo: out });
     } else {
       throw ERR.INVALID_ARGS('无法识别的压缩文件格式（支持 .zip .tar .tar.gz .gz）');
     }

@@ -3,6 +3,8 @@
  * 提供获取当前时间的能力，支持多种格式与时区
  */
 
+const { buildOutput } = require('../lib/output');
+
 class TimeTool {
   constructor(securityValidator) {
     this.securityValidator = securityValidator;
@@ -20,12 +22,7 @@ class TimeTool {
 
     const result = this.buildTimeResponse(now, { format, timeZone, includeMilliseconds });
 
-    if (output_format === 'json') {
-      return { content: [{ type: 'json', json: result.json }] };
-    } else if (output_format === 'text') {
-      return { content: [{ type: 'text', text: result.text }] };
-    }
-    return { content: [ { type: 'text', text: result.text }, { type: 'json', json: result.json } ] };
+    return buildOutput(output_format, result.text, result.json);
   }
 
   buildTimeResponse(dateObj, options) {

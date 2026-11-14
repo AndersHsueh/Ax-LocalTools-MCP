@@ -5,8 +5,10 @@
 
 const SudoersConfigManager = require('../lib/sudoersConfigManager');
 const { ERR } = require('../errors');
-const { text } = require('../responses');
+const { buildOutput } = require('../lib/output');
 const platformUtils = require('../lib/platformUtils');
+
+const { assertSafeConfigName, assertSafeUsername, assertSafeCommands } = SudoersConfigManager;
 
 class SudoConfigTool {
   constructor(securityValidator) {
@@ -35,6 +37,16 @@ class SudoConfigTool {
       dry_run = false,
       output_format = 'text'
     } = args;
+
+    // 参数校验必须排在平台检查之前：否则非 Linux 平台上恶意参数会被
+    // "仅支持Linux" 提前挡掉，看起来安全，其实只是没走到校验逻辑；
+    // 而且调用方在任何平台上都应得到一致、可预测的参数错误。
+    assertSafeConfigName(config_name);
+    if (username !== undefined) assertSafeUsername(username);
+    assertSafeCommands(commands);
+    if (!['limited', 'extended', 'full'].includes(scope)) {
+      throw ERR.INVALID_ARGS(`未知的权限范围: ${scope}`);
+    }
 
     // 检查平台支持
     if (!platformUtils.isLinux) {
@@ -74,19 +86,8 @@ class SudoConfigTool {
           throw ERR.INVALID_ARGS(`未知的操作: ${action}`);
       }
 
-      // 格式化输出
-      if (output_format === 'json') {
-        return { content: [{ type: 'json', json: result }] };
-      } else if (output_format === 'both') {
-        return {
-          content: [
-            { type: 'text', text: this.formatTextOutput(action, result) },
-            { type: 'json', json: result }
-          ]
-        };
-      }
-
-      return text(this.formatTextOutput(action, result));
+      // 统一走输出层：JSON 以 text 块承载，机器可读部分放 structuredContent
+      return buildOutput(output_format, this.formatTextOutput(action, result), result);
 
     } catch (error) {
       throw ERR.INVALID_ARGS(`Sudo配置操作失败: ${error.message}`);
@@ -112,7 +113,7 @@ class SudoConfigTool {
    */
   async handleGenerate(username, scope, commands, dryRun = false) {
     if (!username) {
-      throw new Error('必须指定用户名');
+      throw ERR.INVALID_ARGS('必须指定用户名');
     }
 
     const configContent = this.configManager.generateSudoersRules(username, {
@@ -141,7 +142,7 @@ class SudoConfigTool {
    */
   async handleInstall(username, scope, commands, configName, dryRun = false) {
     if (!username) {
-      throw new Error('必须指定用户名');
+      throw ERR.INVALID_ARGS('必须指定用户名');
     }
 
     const configContent = this.configManager.generateSudoersRules(username, {

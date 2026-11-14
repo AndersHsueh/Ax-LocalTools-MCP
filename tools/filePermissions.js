@@ -6,7 +6,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { ERR } = require('../errors');
-const { text } = require('../responses');
+const { buildOutput } = require('../lib/output');
 const { CrossPlatformPermissionManager } = require('../lib/crossPlatformPermissions');
 const platformUtils = require('../lib/platformUtils');
 
@@ -26,17 +26,25 @@ class FilePermissionsTool {
       recursive = false, 
       max_depth = 5, 
       output_format = 'text',
-      skip_errors = false
+      skip_errors = false,
+      working_directory,
+      working_dir
     } = args;
     
-    const target = filePath || file_path || dir_path;
-    if (!target) {
+    const rawTarget = filePath || file_path || dir_path;
+    if (!rawTarget) {
       throw ERR.INVALID_ARGS('缺少路径参数: 需要 path / file_path / dir_path 之一');
     }
 
-    // 检查路径是否被允许
-    if (!this.securityValidator.isPathAllowed(target)) {
-      throw ERR.PATH_DENIED(target);
+    // 校验与实际操作必须用同一个绝对路径。
+    // 旧实现只做 isPathAllowed 检查，后续 fs 调用仍传原始相对路径，
+    // 会按 process.cwd() 解析：相对路径直接 ENOENT，若 cwd 里恰有同名文件则越权。
+    let target;
+    try {
+      target = this.securityValidator.resolveAndAssert(rawTarget, working_directory || working_dir);
+    } catch (error) {
+      if (error.code === 'E_PATH_DENIED') throw error;
+      throw ERR.PATH_DENIED(rawTarget);
     }
 
     try {
@@ -68,18 +76,7 @@ class FilePermissionsTool {
         operations_count: result.operations ? result.operations.length : 1
       };
       
-      if (output_format === 'json') {
-        return { content: [{ type: 'json', json: data }] };
-      } else if (output_format === 'both') {
-        return { 
-          content: [
-            { type: 'text', text: this.formatTextOutput(data) },
-            { type: 'json', json: data }
-          ]
-        };
-      }
-      
-      return text(this.formatTextOutput(data));
+      return buildOutput(output_format, this.formatTextOutput(data), data);
 
     } catch (error) {
       if (error.code === 'ENOENT') throw ERR.NOT_FOUND(target);
@@ -189,12 +186,15 @@ class FilePermissionsTool {
   /**
    * 获取权限信息（新增功能）
    */
-  async getPermissionInfo(target) {
-    if (!this.securityValidator.isPathAllowed(target)) {
+  async getPermissionInfo(target, workingDirectory = null) {
+    let resolved;
+    try {
+      resolved = this.securityValidator.resolveAndAssert(target, workingDirectory);
+    } catch (error) {
+      if (error.code === 'E_PATH_DENIED') throw error;
       throw ERR.PATH_DENIED(target);
     }
-    
-    return await this.permissionManager.getPermissions(target);
+    return await this.permissionManager.getPermissions(resolved);
   }
 
   /**

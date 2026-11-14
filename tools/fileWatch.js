@@ -7,6 +7,7 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const platformUtils = require('../lib/platformUtils');
+const { buildOutput } = require('../lib/output');
 const { EventEmitter } = require('events');
 
 /**
@@ -267,8 +268,16 @@ class FileWatchTool {
     } = args;
 
     const workDir = working_directory || working_dir;
+    if (!watchPath) throw new Error('缺少监控路径参数: path');
 
-    if (!this.securityValidator.isPathAllowed(watchPath, workDir)) {
+    // 必须用解析后的绝对路径启动监控：旧实现校验用 workDir，实际
+    // access/mkdir/fs.watch 却传原始相对路径，会按 process.cwd() 解析，
+    // 甚至在当前目录凭空创建同名文件夹。
+    let resolvedPath;
+    try {
+      resolvedPath = this.securityValidator.resolveAndAssert(watchPath, workDir);
+    } catch (error) {
+      if (error.code === 'E_PATH_DENIED') throw error;
       throw new Error(`不允许监控路径: ${watchPath}`);
     }
 
@@ -281,35 +290,24 @@ class FileWatchTool {
     }
 
     try {
-      const results = await this.watchPathEnhanced(watchPath, {
+      const results = await this.watchPathEnhanced(resolvedPath, {
         events: eventList,
         duration,
         recursive,
         maxDepth: max_depth
       });
       
-      if (output_format === 'json') {
-        return { 
-          content: [{ 
-            type: 'json', 
-            json: {
-              watch_path: watchPath,
-              duration,
-              events: eventList,
-              changes: results.changes,
-              stats: results.stats,
-              capabilities: results.capabilities
-            }
-          }] 
-        };
-      }
-      
-      return { 
-        content: [{ 
-          type: 'text', 
-          text: this.formatWatchResults(watchPath, duration, eventList, results) 
-        }] 
+      const payload = {
+        watch_path: resolvedPath,
+        duration,
+        events: eventList,
+        changes: results.changes,
+        stats: results.stats,
+        capabilities: results.capabilities
       };
+
+      return buildOutput(output_format,
+        this.formatWatchResults(resolvedPath, duration, eventList, results), payload);
 
     } catch (error) {
       throw new Error(`文件监控失败: ${error.message}`);
